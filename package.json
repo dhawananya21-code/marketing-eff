@@ -1,0 +1,10 @@
+{
+  "name": "marketing-eff",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Marketing activity dashboard with manual entry (activities, marketing channel, sales).",
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
