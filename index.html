@@ -125,6 +125,7 @@
   .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .empty{padding:50px;text-align:center;color:var(--muted)}
+  .nodata{color:var(--muted);font-style:italic;font-size:12px}
 </style>
 </head>
 <body>
@@ -186,10 +187,18 @@ const FILTERS = [
   {key:"product", label:"Product", col:"Product"},
   {key:"status", label:"Status", col:"Status"},
   {key:"achieved", label:"Achieved", col:"Achieved"},
+  // Marketing Channel has no data column yet. It uses a fixed option list;
+  // selecting any value correctly returns zero matches (expected for now).
+  {key:"marketingChannel", label:"Marketing Channel", noData:true, options:[
+    "Hoarding","Pole Hoarding","Bus Branding","Water Tank Painting","Railway Station Ad",
+    "Banner","Retailer Flex Board","Agri Fair or Exhibition","Facebook","YouTube",
+    "Instagram","Website","WhatsApp Bot","IVR Call","Influencer Tie-up"]},
 ];
-// Columns shown in the results table (in order).
+// Columns shown in the results table (in order). "Sales" has no data yet.
 const TABLE_COLS = ["Planned Date","Employee Name","Designation","Zone","Region",
-  "Territory","District","Activity","Activity Type","Product Category","Product","Status","Achieved"];
+  "Territory","District","Activity","Activity Type","Product Category","Product","Status","Achieved","Sales"];
+// Table columns that are placeholders (no underlying data yet).
+const NODATA_COLS = new Set(["Sales"]);
 const PAGE_SIZE = 100;
 
 // ---- State ---------------------------------------------------------------
@@ -293,6 +302,27 @@ function makeSearchable(f){
 }
 
 function renderOpts(f){
+  // Fixed-option filter with no underlying data yet (e.g. Marketing Channel):
+  // show the given options as-is; picking one yields zero matches (expected).
+  if(f.options){
+    let list=f.options.slice();
+    const q0=f._search.value.trim().toLowerCase();
+    if(q0) list=list.filter(v=>v.toLowerCase().includes(q0));
+    const cur0=selected[f.key]||"";
+    const box0=f._opts;
+    if(!list.length){box0.innerHTML='<div class="none">No matches</div>';return;}
+    box0.innerHTML="";
+    const frag0=document.createDocumentFragment();
+    list.forEach(v=>{
+      const d=document.createElement("div");
+      d.className="opt"+(v===cur0?" sel":"");
+      d.innerHTML='<span>'+esc(v)+'</span><span class="cnt">no data</span>';
+      d.addEventListener("click",()=>setSel(f,v));
+      frag0.appendChild(d);
+    });
+    box0.appendChild(frag0);
+    return;
+  }
   // distinct values available given ALL OTHER active filters (cascading), with counts
   const counts=new Map();
   for(const r of ROWS){
@@ -342,7 +372,9 @@ function passesExcept(r, skipKey){
   for(const f of FILTERS){
     if(f.key===skipKey) continue;
     const want=selected[f.key];
-    if(want && r[f._ci]!==want) return false;
+    if(!want) continue;
+    if(f.noData) return false;              // no data exists for this filter yet
+    if(r[f._ci]!==want) return false;
   }
   const d=r[IDX["Planned Date"]];
   if(dateFrom && (!d || d<dateFrom)) return false;
@@ -395,6 +427,7 @@ function renderTable(){
   }else{
     const rows=slice.map(r=>{
       return "<tr>"+TABLE_COLS.map(c=>{
+        if(NODATA_COLS.has(c)) return '<td><span class="nodata">no data yet</span></td>';
         const v=r[IDX[c]]||"";
         if(c==="Status") return "<td>"+(v?'<span class="pill '+v+'">'+v+"</span>":"")+"</td>";
         if(c==="Achieved") return "<td>"+(v?'<span class="pill '+v+'">'+v+"</span>":"")+"</td>";
@@ -431,9 +464,9 @@ function resetAll(){
 }
 
 function exportCsv(){
-  const cols=COLS; // export all kept columns
-  const head=cols.map(csvCell).join(",");
-  const lines=filtered.map(r=>cols.map((c,i)=>csvCell(r[i])).join(","));
+  const cols=COLS; // export all kept columns, plus the Sales placeholder column
+  const head=cols.map(csvCell).concat("Sales").join(",");
+  const lines=filtered.map(r=>cols.map((c,i)=>csvCell(r[i])).concat("no data yet").join(","));
   const blob=new Blob([head+"\n"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
