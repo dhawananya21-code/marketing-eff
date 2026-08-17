@@ -167,6 +167,38 @@
 
   .banner{background:var(--brand-soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink)}
   .banner b{color:var(--brand)}
+
+  /* detailed-records nav */
+  .tabs{align-items:flex-end}
+  .detail-nav{display:flex;align-items:center;gap:10px;margin-left:auto;padding-bottom:10px;font-size:13px;color:var(--muted)}
+  .detail-nav .tablink{cursor:pointer;color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:7px;font-weight:600}
+  .detail-nav .tablink:hover{color:var(--brand);background:var(--brand-soft)}
+  .detail-nav .tablink.active{color:var(--brand);background:var(--brand-soft)}
+
+  /* summary page */
+  .sum-controls{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:18px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+  .sum-controls .field{min-width:220px}
+  .sum-controls select{width:100%;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:6px 10px;font:inherit}
+  .sum-controls select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);outline:none}
+  .sum-lead{font-size:13px;color:var(--muted);width:100%;margin-bottom:2px}
+  .sum-section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+  .sum-section > h3{margin:0 0 2px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .sum-section > .sdesc{color:var(--muted);font-size:12px;margin-bottom:14px}
+  .sdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .sdot.act{background:var(--brand)}.sdot.mkt{background:var(--good)}.sdot.sal{background:var(--warn)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .tile{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .tile .n{font-size:22px;font-weight:650;letter-spacing:-.02em}
+  .tile .l{color:var(--muted);font-size:12px;margin-top:2px}
+  .subhead{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 8px}
+  .breakdowns{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:760px){.breakdowns{grid-template-columns:1fr}.sum-section .charts{grid-template-columns:1fr}}
+  .hbar{display:grid;grid-template-columns:130px 1fr 54px;gap:10px;align-items:center;margin:7px 0}
+  .hbar .lbl{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hbar .track{background:var(--chip);border-radius:6px;height:14px;overflow:hidden}
+  .hbar .fill{height:100%;border-radius:6px}
+  .hbar .num{font-size:13px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .sum-empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;background:var(--bg);font-size:13px}
 </style>
 </head>
 <body>
@@ -182,13 +214,35 @@
     </div>
   </div>
   <div class="tabs">
-    <div class="tab active" data-tab="activities">Activities</div>
-    <div class="tab" data-tab="marketing">Marketing Channel</div>
+    <div class="tab active" data-tab="summary">Summary</div>
+    <div class="detail-nav">
+      <span>View detailed records:</span>
+      <span class="tablink" data-tab="activities">Activities</span>
+      <span class="tablink" data-tab="marketing">Marketing Channel</span>
+    </div>
   </div>
 </header>
 
 <div class="wrap">
   <div id="app" class="loading"><div class="spinner"></div>Loading activity records…</div>
+
+  <!-- SUMMARY PAGE (default) -->
+  <div class="page active" id="page-summary">
+    <div class="sum-controls">
+      <div class="sum-lead">Pick one thing to explore, and see everything connected to it summarized below.</div>
+      <div class="field">
+        <label>Explore by</label>
+        <select id="sumDim">
+          <option value="product">Product</option>
+          <option value="district">District</option>
+          <option value="channelType">Marketing Channel Type</option>
+          <option value="date">Date Range</option>
+        </select>
+      </div>
+      <div class="field" id="sumValueWrap"></div>
+    </div>
+    <div id="sumBody"></div>
+  </div>
 
   <!-- ACTIVITIES PAGE -->
   <div class="page" id="page-activities">
@@ -299,7 +353,8 @@ let manual={activity:[],marketing:[],sales:[]};
 let dbConfigured=false;
 let actSel={},actFrom="",actTo="",actPage=0,actFiltered=[];
 let mktSel={},mktFiltered=[];
-let currentTab="activities";
+let currentTab="summary";
+let sumDim="product",sumValue="",sumFrom="",sumTo="";
 
 // ---- load ----
 Promise.all([
@@ -339,7 +394,6 @@ function rebuildActRows(){
 // ---- boot ----
 function boot(){
   document.getElementById("app").style.display="none";
-  document.getElementById("page-activities").classList.add("active");
   updateSubtitle();
 
   const di=IDX["Planned Date"];let mn="9999",mx="0000";
@@ -354,8 +408,10 @@ function boot(){
 
   buildActFilters();
   buildMktFilters();
+  buildSummaryControls();
   applyAct();
   applyMkt();
+  renderSummary();
   updateRecent();
   wireTabs();
   wireModals();
@@ -486,6 +542,7 @@ function exportAct(){
 // ================= MARKETING CHANNEL =================
 const MKT_FILTERS=[
   {key:"channelType",label:"Channel Type",get:e=>e.channelType},
+  {key:"product",label:"Product",get:e=>e.product},
   {key:"district",label:"District",get:e=>e.district},
   {key:"month",label:"Month",get:e=>e.month},
 ];
@@ -504,6 +561,7 @@ function buildMktFilters(){
         // base option universe
         let universe=[];
         if(f.key==="channelType")universe=CHANNELS.slice();
+        else if(f.key==="product")universe=productUniverse();
         else if(f.key==="district")universe=districtUniverse();
         else universe=monthUniverse();
         universe.forEach(v=>{if(!q||v.toLowerCase().includes(q))m.set(v,0);});
@@ -522,6 +580,12 @@ function districtUniverse(){
   manual.sales.forEach(e=>{if(e.district)s.add(e.district);});
   return [...s];
 }
+function productUniverse(){
+  const s=new Set(distinctCsv("Product"));
+  manual.marketing.forEach(e=>{if(e.product)s.add(e.product);});
+  manual.sales.forEach(e=>{if(e.product)s.add(e.product);});
+  return [...s];
+}
 function monthUniverse(){
   const s=new Set();
   manual.marketing.forEach(e=>{if(e.month)s.add(e.month);});
@@ -537,7 +601,7 @@ function renderMktKpis(){
     {n:nf.format(target),l:"Total target"},{n:"₹"+nf.format(cost),l:"Total cost"}];
   document.getElementById("mktKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+'</div></div>').join("");
 }
-const MKT_TABLE_COLS=[["channelType","Channel Type"],["district","District"],["month","Month"],
+const MKT_TABLE_COLS=[["channelType","Channel Type"],["product","Product"],["district","District"],["month","Month"],
   ["target","Target"],["actual","Actual"],["cost","Cost"],["notes","Notes"],["created_at","Added"]];
 function renderMktTable(){
   document.getElementById("mktThead").innerHTML="<tr>"+MKT_TABLE_COLS.map(c=>"<th>"+esc(c[1])+"</th>").join("")+"</tr>";
@@ -642,6 +706,7 @@ const ACT_FORM=[
 ];
 const MKT_FORM=[
   {key:"channelType",label:"Channel Type",type:"select",opts:()=>CHANNELS,required:true},
+  {key:"product",label:"Product (optional)",type:"text",list:"dl-products"},
   {key:"district",label:"District",type:"text",list:"dl-districts",required:true},
   {key:"month",label:"Month",type:"month",required:true},
   {key:"target",label:"Target",type:"number"},
@@ -722,7 +787,7 @@ async function submitForm(){
 function refreshAfterAdd(){
   updateSubtitle();updateRecent();
   // rebuild dropdown option universes may have changed; simplest is re-apply
-  applyAct();applyMkt();
+  applyAct();applyMkt();renderSummary();
 }
 
 // ================= RECENT LIST =================
@@ -741,10 +806,146 @@ function updateRecent(){
   }).join("");
 }
 
+// ================= SUMMARY PAGE =================
+function buildSummaryControls(){
+  const sel=document.getElementById("sumDim");
+  sel.value=sumDim;
+  sel.addEventListener("change",()=>{sumDim=sel.value;sumValue="";sumFrom="";sumTo="";rebuildValueControl();renderSummary();});
+  rebuildValueControl();
+}
+function rebuildValueControl(){
+  const wrap=document.getElementById("sumValueWrap");wrap.innerHTML="";
+  if(sumDim==="date"){
+    wrap.innerHTML='<label>Date range</label><div class="daterow">'+
+      '<div><div class="sub">From</div><input type="date" id="sumFrom" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div>'+
+      '<div><div class="sub">To</div><input type="date" id="sumTo" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div></div>';
+    const a=wrap.querySelector("#sumFrom"),b=wrap.querySelector("#sumTo");a.value=sumFrom;b.value=sumTo;
+    a.addEventListener("change",e=>{sumFrom=e.target.value;renderSummary();});
+    b.addEventListener("change",e=>{sumTo=e.target.value;renderSummary();});
+    return;
+  }
+  const label={product:"Product",district:"District",channelType:"Marketing Channel Type"}[sumDim];
+  const lab=document.createElement("label");lab.textContent=label;wrap.appendChild(lab);
+  const dd=makeDropdown({label,getCounts:q=>summaryValueCounts(sumDim,q),onChange:v=>{sumValue=v;renderSummary();}});
+  wrap.appendChild(dd.el);
+}
+function summaryValueCounts(dim,q){
+  const m=new Map();
+  if(dim==="channelType"){
+    CHANNELS.forEach(v=>{if(!q||v.toLowerCase().includes(q))m.set(v,0);});
+    for(const e of manual.marketing){const v=e.channelType;if(!v)continue;if(q&&!v.toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
+    return m;
+  }
+  const ci=dim==="product"?IDX.Product:IDX.District;
+  for(const r of ACT_ROWS){const v=r[ci];if(!v)continue;if(q&&!v.toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
+  (dim==="product"?productUniverse():districtUniverse()).forEach(v=>{if((!q||v.toLowerCase().includes(q))&&!m.has(v))m.set(v,0);});
+  return m;
+}
+function monthInRange(month,from,to){const f=from?from.slice(0,7):"",t=to?to.slice(0,7):"";if(f&&month<f)return false;if(t&&month>t)return false;return true;}
+function countBy(rows,ci){const m=new Map();for(const r of rows){const v=r[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
+function countByKey(entries,key){const m=new Map();for(const e of entries){const v=e[key];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
+function tile(n,l){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div></div>';}
+function tiles(a){return '<div class="tiles">'+a.map(x=>tile(x.n,x.l)).join("")+'</div>';}
+function hbars(counts,o){
+  o=o||{};const color=o.color||"var(--brand)",limit=o.limit||5,prefix=o.prefix||"",fmt=o.fmt||nf.format;
+  const list=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]).slice(0,limit);
+  if(!list.length)return '<div class="sum-empty">No data.</div>';
+  const max=list[0][1]||1;
+  return list.map(([k,v])=>{const w=Math.max(4,Math.round(v/max*100));
+    return '<div class="hbar"><div class="lbl" title="'+esc(k)+'">'+esc(k)+'</div><div class="track"><div class="fill" style="width:'+w+'%;background:'+color+'"></div></div><div class="num">'+prefix+fmt(v)+'</div></div>';}).join("");
+}
+function fmtNiceDate(s){if(!s)return "";const d=new Date(s+"T00:00:00");if(isNaN(d))return s;return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
+
+function summaryActivities(sel){
+  if(sel.dim==="channelType")return null;
+  const pi=IDX.Product,di=IDX.District,dt=IDX["Planned Date"];
+  return ACT_ROWS.filter(r=>{
+    if(sel.dim==="product")return r[pi]===sel.value;
+    if(sel.dim==="district")return r[di]===sel.value;
+    const d=r[dt];return d&&(!sel.from||d>=sel.from)&&(!sel.to||d<=sel.to);
+  });
+}
+function summaryMarketing(sel){
+  return manual.marketing.filter(e=>{
+    if(sel.dim==="product")return (e.product||"")===sel.value;
+    if(sel.dim==="district")return (e.district||"")===sel.value;
+    if(sel.dim==="channelType")return (e.channelType||"")===sel.value;
+    return e.month&&monthInRange(e.month,sel.from,sel.to);
+  });
+}
+function summarySales(sel){
+  if(sel.dim==="channelType")return null;
+  return manual.sales.filter(e=>{
+    if(sel.dim==="product")return (e.product||"")===sel.value;
+    if(sel.dim==="district")return (e.district||"")===sel.value;
+    return e.month&&monthInRange(e.month,sel.from,sel.to);
+  });
+}
+function sectionActivities(sel){
+  const rows=summaryActivities(sel);let inner;
+  if(rows===null){inner='<div class="sum-empty">Activities aren\'t linked to a marketing channel type, so there\'s nothing to summarize here.</div>';}
+  else if(!rows.length){inner='<div class="sum-empty">No activities found for this selection.</div>';}
+  else{
+    const n=rows.length,si=IDX.Status,ei=IDX["Employee Name"];let completed=0;const emps=new Set();
+    for(const r of rows){if(r[si]==="Completed")completed++;if(r[ei])emps.add(r[ei]);}
+    const t=tiles([{n:nf.format(n),l:"Total activities"},{n:(n?Math.round(completed/n*100)+"%":"–"),l:"Completion rate"},{n:nf.format(emps.size),l:"Employees involved"}]);
+    const b1=hbars(countBy(rows,IDX.Activity),{color:"var(--brand)"});
+    let b2t,b2;
+    if(sel.dim==="district"){b2t="Top products";b2=hbars(countBy(rows,IDX.Product),{color:"var(--brand)"});}
+    else{b2t="Top districts involved";b2=hbars(countBy(rows,IDX.District),{color:"var(--brand)"});}
+    inner=t+'<div class="breakdowns"><div><div class="subhead">Top activity types</div>'+b1+'</div><div><div class="subhead">'+b2t+'</div>'+b2+'</div></div>';
+  }
+  return '<div class="sum-section"><h3><span class="sdot act"></span>Activities summary</h3><div class="sdesc">Field activities connected to your selection (CSV + manually added).</div>'+inner+'</div>';
+}
+function sectionMarketing(sel){
+  const subs=summaryMarketing(sel);let inner;
+  if(!subs.length){
+    const extra=sel.dim==="product"?" No channel campaigns are tagged with this product yet — this section fills in automatically once they are.":"";
+    inner='<div class="sum-empty">No matching marketing channel entries yet.'+extra+'</div>';
+  }else{
+    const n=subs.length;let cost=0,reach=0;for(const e of subs){cost+=num(e.cost);reach+=num(e.actual);}
+    const cpr=reach>0?"₹"+nf.format(Math.round(cost/reach*100)/100):"–";
+    const t=tiles([{n:nf.format(n),l:"Total entries"},{n:"₹"+nf.format(cost),l:"Total cost"},{n:nf.format(reach),l:"Est. reach"},{n:cpr,l:"Cost per reach"}]);
+    inner=t+'<div><div class="subhead">Channel type breakdown (entries)</div>'+hbars(countByKey(subs,"channelType"),{color:"var(--good)",limit:8})+'</div>';
+  }
+  return '<div class="sum-section"><h3><span class="sdot mkt"></span>Marketing Channel summary</h3><div class="sdesc">Channel campaigns connected to your selection. Est. reach = total of the “Actual” figures.</div>'+inner+'</div>';
+}
+function sectionSales(sel){
+  const subs=summarySales(sel);let inner;
+  if(subs===null){inner='<div class="sum-empty">Sales aren\'t linked to a marketing channel type.</div>';}
+  else if(!subs.length){inner='<div class="sum-empty">Not enough data yet.</div>';}
+  else{
+    let val=0,units=0;for(const e of subs){val+=num(e.salesValue);units+=num(e.unitsSold);}
+    inner=tiles([{n:"₹"+nf.format(val),l:"Total sales value"},{n:nf.format(units),l:"Total units"}])+
+      '<div class="subhead">Sales trend over time</div><div id="sumSalesChart"></div>';
+  }
+  return '<div class="sum-section"><h3><span class="sdot sal"></span>Sales summary</h3><div class="sdesc">Sales connected to your selection.</div>'+inner+'</div>';
+}
+function renderSummary(){
+  const body=document.getElementById("sumBody");if(!body)return;
+  const hasSel=sumDim==="date"?(sumFrom&&sumTo):!!sumValue;
+  if(!hasSel){
+    const what={product:"a product",district:"a district",channelType:"a marketing channel type",date:"a start and end date"}[sumDim];
+    body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';return;
+  }
+  const sel={dim:sumDim,value:sumValue,from:sumFrom,to:sumTo};
+  const dimLabel={product:"Product",district:"District",channelType:"Marketing Channel Type",date:"Date Range"}[sumDim];
+  const valLabel=sumDim==="date"?(fmtNiceDate(sumFrom)+" → "+fmtNiceDate(sumTo)):sumValue;
+  body.innerHTML='<div class="banner">Showing everything connected to <b>'+esc(dimLabel)+': '+esc(valLabel)+'</b></div>'+
+    sectionActivities(sel)+sectionMarketing(sel)+sectionSales(sel);
+  const host=document.getElementById("sumSalesChart");
+  if(host){
+    const subs=summarySales(sel),byMonth=new Map();
+    for(const e of subs){if(e.month)byMonth.set(e.month,(byMonth.get(e.month)||0)+num(e.salesValue));}
+    host.appendChild(lineChart({title:"Sales value over time",sub:"Sum of Sales Value per month",
+      months:[...byMonth.keys()].sort(),valueByMonth:byMonth,color:"var(--chart-aqua)",prefix:"₹",emptyMsg:"Not enough data yet."}));
+  }
+}
+
 // ================= plumbing =================
 function wireTabs(){
-  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll("[data-tab]").forEach(t=>t.addEventListener("click",()=>{
+    document.querySelectorAll("[data-tab]").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");currentTab=t.getAttribute("data-tab");
     document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
     document.getElementById("page-"+currentTab).classList.add("active");
