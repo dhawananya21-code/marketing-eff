@@ -222,6 +222,13 @@
   .mbox.reduce{border-top:3px solid var(--bad)}
   .chip{display:inline-block;background:var(--chip);border-radius:20px;padding:4px 11px;font-size:12px;margin:3px 4px 0 0}
   .empty-mini{color:var(--muted);font-size:12px;font-style:italic}
+  /* inline metric info */
+  .info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-size:10px;font-style:italic;font-family:Georgia,serif;font-weight:700;cursor:pointer;vertical-align:middle;line-height:1;user-select:none;margin-left:5px;flex:none}
+  .info-i:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+  .info-pop{position:fixed;z-index:400;max-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink);font-weight:400;text-transform:none;letter-spacing:normal}
+  .info-pop .ip-title{font-weight:700;font-size:13px;margin-bottom:6px}
+  .info-pop .ip-row{margin-bottom:6px}
+  .info-pop .ip-status{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -531,9 +538,9 @@ function renderActKpis(){
   let completed=0,achieved=0;const emps=new Set();
   for(const r of actFiltered){if(r[si]==="Completed")completed++;if(r[ai]==="Yes")achieved++;if(r[ei])emps.add(r[ei]);}
   const n=actFiltered.length,pct=x=>n?Math.round(x/n*100)+"%":"–";
-  const k=[{n:nf.format(n),l:"Results"},{n:nf.format(completed)+" · "+pct(completed),l:"Completed"},
-    {n:nf.format(achieved)+" · "+pct(achieved),l:"Achieved"},{n:nf.format(emps.size),l:"Employees"}];
-  document.getElementById("actKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+'</div></div>').join("");
+  const k=[{n:nf.format(n),l:"Results",info:"act_results"},{n:nf.format(completed)+" · "+pct(completed),l:"Completed",info:"act_completion"},
+    {n:nf.format(achieved)+" · "+pct(achieved),l:"Achieved",info:"act_achieved"},{n:nf.format(emps.size),l:"Employees",info:"act_employees"}];
+  document.getElementById("actKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+infoIcon(x.info)+'</div></div>').join("");
 }
 function renderActTable(){
   document.getElementById("actThead").innerHTML="<tr>"+ACT_TABLE_COLS.map(c=>"<th>"+esc(c)+"</th>").join("")+"</tr>";
@@ -628,9 +635,9 @@ function num(v){const n=parseFloat(v);return isNaN(n)?0:n;}
 function renderMktKpis(){
   let target=0,actual=0,cost=0;
   for(const e of mktFiltered){target+=num(e.target);actual+=num(e.actual);cost+=num(e.cost);}
-  const k=[{n:nf.format(mktFiltered.length),l:"Channel entries"},{n:nf.format(actual),l:"Total actual"},
-    {n:nf.format(target),l:"Total target"},{n:"₹"+nf.format(cost),l:"Total cost"}];
-  document.getElementById("mktKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+'</div></div>').join("");
+  const k=[{n:nf.format(mktFiltered.length),l:"Channel entries",info:"mkt_entries"},{n:nf.format(actual),l:"Total actual",info:"mkt_actual"},
+    {n:nf.format(target),l:"Total target",info:"mkt_target"},{n:"₹"+nf.format(cost),l:"Total cost",info:"mkt_cost"}];
+  document.getElementById("mktKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+infoIcon(x.info)+'</div></div>').join("");
 }
 const MKT_TABLE_COLS=[["channelType","Channel Type"],["product","Product"],["district","District"],["month","Month"],
   ["target","Target"],["actual","Actual"],["cost","Cost"],["notes","Notes"],["created_at","Added"]];
@@ -669,7 +676,8 @@ function renderMktCharts(){
   for(const e of manual.sales){if(e.district===district&&e.month&&monthOk(e.month))salesVal.set(e.month,(salesVal.get(e.month)||0)+num(e.salesValue));}
   const months=[...new Set([...chActual.keys(),...salesVal.keys()])].sort();
 
-  host.innerHTML='<div class="charts"><div id="chartA"></div><div id="chartB"></div></div>'+
+  host.innerHTML='<div class="subhead" style="margin-bottom:10px">Channel activity vs sales comparison'+infoIcon("mkt_compare")+'</div>'+
+    '<div class="charts"><div id="chartA"></div><div id="chartB"></div></div>'+
     '<div class="chart-note">Showing <b>'+esc(district)+'</b>. The sales chart fills in automatically as soon as sales entries exist for this district — no changes needed.</div>';
   document.getElementById("chartA").appendChild(lineChart({
     title:"Channel activity over time",sub:"Sum of Actual per month",
@@ -875,8 +883,8 @@ function summaryValueCounts(dim,q){
 function monthInRange(month,from,to){const f=from?from.slice(0,7):"",t=to?to.slice(0,7):"";if(f&&month<f)return false;if(t&&month>t)return false;return true;}
 function countBy(rows,ci){const m=new Map();for(const r of rows){const v=r[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
 function countByKey(entries,key){const m=new Map();for(const e of entries){const v=e[key];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
-function tile(n,l,sub){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';}
-function tiles(a){return '<div class="tiles">'+a.map(x=>tile(x.n,x.l,x.sub)).join("")+'</div>';}
+function tile(n,l,sub,info){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+(info?infoIcon(info):"")+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';}
+function tiles(a){return '<div class="tiles">'+a.map(x=>tile(x.n,x.l,x.sub,x.info)).join("")+'</div>';}
 function ordinal(n){const v=n%100,s=["th","st","nd","rd"];return n+(s[(v-20)%10]||s[v]||s[0]);}
 
 // ---- overall (all-activities) baselines for comparison ----
@@ -973,7 +981,7 @@ function sectionActivities(sel){
     else{totalSub=(GLOBAL.total?Math.round(n/GLOBAL.total*100):0)+"% of all activities";}
     const cls=Math.abs(diff)<2?"":(diff>0?"up":"down"),arw=Math.abs(diff)<2?"":(diff>0?"▲ ":"▼ ");
     const rateSub='<span class="'+cls+'">'+arw+"overall avg "+g+"%</span>";
-    const t=tiles([{n:nf.format(n),l:"Total activities",sub:totalSub},{n:(n?rate+"%":"–"),l:"Completion rate",sub:rateSub},{n:nf.format(emps.size),l:"Employees involved"}]);
+    const t=tiles([{n:nf.format(n),l:"Total activities",sub:totalSub,info:"sum_rank"},{n:(n?rate+"%":"–"),l:"Completion rate",sub:rateSub,info:"sum_completion"},{n:nf.format(emps.size),l:"Employees involved",info:"act_employees"}]);
     const b1=hbars(countBy(rows,IDX.Activity),{color:"var(--brand)"});
     let b2t,b2;
     if(sel.dim==="district"){b2t="Top products";b2=hbars(countBy(rows,IDX.Product),{color:"var(--brand)"});}
@@ -990,8 +998,8 @@ function sectionMarketing(sel){
   }else{
     const n=subs.length;let cost=0,reach=0;for(const e of subs){cost+=num(e.cost);reach+=num(e.actual);}
     const cpr=reach>0?"₹"+nf.format(Math.round(cost/reach*100)/100):"–";
-    const t=tiles([{n:nf.format(n),l:"Total entries"},{n:"₹"+nf.format(cost),l:"Total cost"},{n:nf.format(reach),l:"Est. reach"},{n:cpr,l:"Cost per reach"}]);
-    inner=t+'<div><div class="subhead">Channel type breakdown (entries)</div>'+hbars(countByKey(subs,"channelType"),{color:"var(--good)",limit:8})+'</div>';
+    const t=tiles([{n:nf.format(n),l:"Total entries",info:"mkt_entries"},{n:"₹"+nf.format(cost),l:"Total cost",info:"mkt_cost"},{n:nf.format(reach),l:"Est. reach",info:"sum_reach"},{n:cpr,l:"Cost per reach",info:"sum_cost_per_reach"}]);
+    inner=t+'<div><div class="subhead">Channel type breakdown (entries)'+infoIcon("sum_channel_breakdown")+'</div>'+hbars(countByKey(subs,"channelType"),{color:"var(--good)",limit:8})+'</div>';
   }
   return '<div class="sum-section"><h3><span class="sdot mkt"></span>Marketing Channel summary</h3><div class="sdesc">Channel campaigns connected to your selection. Est. reach = total of the “Actual” figures.</div>'+inner+'</div>';
 }
@@ -1001,8 +1009,8 @@ function sectionSales(sel){
   else if(!subs.length){inner='<div class="sum-empty">Not enough data yet.</div>';}
   else{
     let val=0,units=0;for(const e of subs){val+=num(e.salesValue);units+=num(e.unitsSold);}
-    inner=tiles([{n:"₹"+nf.format(val),l:"Total sales value"},{n:nf.format(units),l:"Total units"}])+
-      '<div class="subhead">Sales trend over time</div><div id="sumSalesChart"></div>';
+    inner=tiles([{n:"₹"+nf.format(val),l:"Total sales value",info:"sum_sales_trend"},{n:nf.format(units),l:"Total units",info:"sum_sales_trend"}])+
+      '<div class="subhead">Sales trend over time'+infoIcon("sum_sales_trend")+'</div><div id="sumSalesChart"></div>';
   }
   return '<div class="sum-section"><h3><span class="sdot sal"></span>Sales summary</h3><div class="sdesc">Sales connected to your selection.</div>'+inner+'</div>';
 }
@@ -1058,6 +1066,7 @@ function renderEfficiency(){
   const status='<div class="banner">This analysis matches Marketing Channel <b>cost</b> with <b>Sales value</b> for the same district and month. It needs at least <b>'+EFF_MIN_COMBOS+'</b> channel + district combinations that have both. Currently: <b>'+count+' of '+EFF_MIN_COMBOS+'</b>.</div>';
   if(count<EFF_MIN_COMBOS){
     host.innerHTML=status+'<div class="sum-section"><h3>Spend vs Sales analysis</h3>'+
+      '<div style="margin:-4px 0 12px;color:var(--muted);font-size:13px">What each one means: Sales per Rupee Spent'+infoIcon("eff_spr")+' · Channel Efficiency Index'+infoIcon("eff_index")+' · Opportunity Matrix'+infoIcon("eff_matrix")+'</div>'+
       '<div class="sum-empty" style="padding:40px">Not enough data yet.<br><br>Sales per Rupee Spent, the Channel Efficiency Index, and the Opportunity Matrix all compare marketing spend against sales for the same district and month. They turn on automatically once at least '+EFF_MIN_COMBOS+' channel + district combinations have both cost and sales recorded.<br><br><b>'+count+' of '+EFF_MIN_COMBOS+'</b> combinations available so far.</div></div>';
     return;
   }
@@ -1068,7 +1077,7 @@ function renderEfficiency(){
   }).join("");
   const listCard='<div class="sum-section"><h3>Sales per rupee spent &amp; efficiency</h3>'+
     '<div class="sdesc">Sales value ÷ marketing cost for each channel + district (matched by month). Efficiency: 100 = the average of ₹'+avg.toFixed(2)+' of sales per ₹1 spent; above 100 is better than average.</div>'+
-    '<div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>Channel — District</th><th>Sales per ₹1</th><th>Efficiency</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    '<div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>Channel — District</th><th>Sales per ₹1'+infoIcon("eff_spr")+'</th><th>Efficiency'+infoIcon("eff_index")+'</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   // opportunity matrix: efficiency (vs 100) x total sales (vs median)
   const salesArr=list.map(o=>o.sales).sort((a,b)=>a-b),m=salesArr.length;
   const median=m%2?salesArr[(m-1)/2]:(salesArr[m/2-1]+salesArr[m/2])/2;
@@ -1080,12 +1089,68 @@ function renderEfficiency(){
     {k:"optimise",t:"Optimise",r:"Low efficiency · High sales",d:"Big but wasteful — tighten the spend."},
     {k:"reduce",t:"Reduce",r:"Low efficiency · Low sales",d:"Weak on both — consider cutting back."},
   ];
-  const matrix='<div class="sum-section"><h3>Opportunity matrix</h3>'+
+  const matrix='<div class="sum-section"><h3>Opportunity matrix'+infoIcon("eff_matrix")+'</h3>'+
     '<div class="sdesc">Each channel + district placed by efficiency (vs the 100 average) and total sales (vs the middle value).</div><div class="matrix">'+
     boxes.map(b=>'<div class="mbox '+b.k+'"><h4>'+b.t+'</h4><div class="mrule">'+b.r+'</div><div class="mdesc">'+b.d+'</div>'+
       (g[b.k].length?g[b.k].map(o=>'<span class="chip">'+esc(o.channel)+' — '+esc(o.district)+'</span>').join(""):'<span class="empty-mini">None</span>')+'</div>').join("")+'</div></div>';
   host.innerHTML=status+listCard+matrix;
 }
+
+// ================= INLINE METRIC EXPLANATIONS =================
+function realOrWait(has,realTxt,waitTxt){return has?realTxt:waitTxt;}
+function effStatus(){const {count}=computeEfficiency();
+  return count>=EFF_MIN_COMBOS
+    ? "Showing real numbers — "+count+" channel + district combinations qualify."
+    : "Waiting on data — needs both cost and sales in the same district + month for at least "+EFF_MIN_COMBOS+" combinations (currently "+count+" of "+EFF_MIN_COMBOS+").";}
+const ACT_STATUS="Showing real numbers — based on the activity records (from the CSV files, plus any you add).";
+function mktStatus(){return realOrWait(manual.marketing.length,"Showing real numbers from your marketing channel entries.","Waiting on data — no marketing channel entries have been added yet.");}
+function salesStatus(){return realOrWait(manual.sales.length,"Showing real numbers from your sales entries.","Waiting on data — no sales entries have been added yet.");}
+const INFO={
+  act_results:{title:"Results",what:"How many activity records match the filters you've set.",formula:"A count of the matching rows.",status:()=>ACT_STATUS},
+  act_completion:{title:"Completed",what:"Of the activities shown, how many were marked Completed — and what share that is.",formula:"Completed activities ÷ all shown activities × 100.",status:()=>ACT_STATUS},
+  act_achieved:{title:"Achieved",what:"Of the activities shown, how many were marked Achieved = Yes — and what share that is.",formula:"Achieved (Yes) ÷ all shown activities × 100.",status:()=>ACT_STATUS},
+  act_employees:{title:"Employees",what:"How many different employees appear in the activities shown.",formula:"A count of the unique employee names.",status:()=>ACT_STATUS},
+  mkt_entries:{title:"Channel entries",what:"How many marketing channel entries match the filters.",formula:"A count of the matching entries.",status:mktStatus},
+  mkt_actual:{title:"Total actual",what:"The Actual figures from the shown entries, added together.",formula:"Sum of the Actual field across the shown entries.",status:mktStatus},
+  mkt_target:{title:"Total target",what:"The Target figures from the shown entries, added together.",formula:"Sum of the Target field across the shown entries.",status:mktStatus},
+  mkt_cost:{title:"Total cost",what:"The Cost figures from the shown entries, added together.",formula:"Sum of the Cost field across the shown entries.",status:mktStatus},
+  mkt_compare:{title:"Channel activity vs sales over time",what:"For the chosen district, two lines month by month: how much channel activity happened, next to how much was sold — so you can eyeball them together.",formula:"Channel line = total of Actual per month. Sales line = total of Sales Value per month.",status:()=>realOrWait(manual.sales.length,"Both lines show real numbers.","The channel line uses your marketing entries; the sales line is waiting on sales data.")},
+  sum_rank:{title:"Total activities & rank",what:"How many activities involve your selection, and where that places it among all districts (or products) by number of activities.",formula:"Rank = its position when everything is sorted by activity count, most first (e.g. 56th of 743).",status:()=>ACT_STATUS},
+  sum_completion:{title:"Completion rate vs average",what:"The completion rate for your selection shown next to the average across all activities, so you can see if it's above or below.",formula:"Selection: Completed ÷ its activities × 100. Average: Completed ÷ all activities × 100.",status:()=>ACT_STATUS},
+  sum_reach:{title:"Estimated reach",what:"A rough estimate of how many were reached by the matching channel campaigns.",formula:"Sum of the Actual figures across the matching marketing entries.",status:mktStatus},
+  sum_cost_per_reach:{title:"Cost per reach",what:"Roughly how much marketing spend it took to reach one person/unit.",formula:"Total cost ÷ estimated reach (reach = total of the Actual figures).",status:mktStatus},
+  sum_channel_breakdown:{title:"Channel type breakdown",what:"How the matching marketing entries split across the different channel types.",formula:"A count of entries for each channel type, biggest first.",status:mktStatus},
+  sum_sales_trend:{title:"Sales trend over time",what:"Total sales value for your selection, month by month.",formula:"Sum of Sales Value per month.",status:salesStatus},
+  eff_spr:{title:"Sales per Rupee Spent",what:"For a channel used in a district, how much sales value is linked to each ₹1 of marketing cost.",formula:"Sales value ÷ marketing cost, matched by the same district and month.",status:effStatus},
+  eff_index:{title:"Channel Efficiency Index",what:"A simple score comparing each channel + district to the average. 100 means average, above is better, below is worse.",formula:"Its sales-per-rupee ÷ the average sales-per-rupee × 100.",status:effStatus},
+  eff_matrix:{title:"Opportunity Matrix",what:"Sorts each channel + district into four action groups based on how efficient it is and how much it sells.",formula:"Efficiency vs 100 (above/below average) and total sales vs the middle value (median) → Scale / Invest / Optimise / Reduce.",status:effStatus},
+};
+function infoIcon(key){return '<span class="info-i" data-info="'+key+'" role="button" tabindex="0" aria-label="What this means" title="What this means">i</span>';}
+let infoPop=null;
+function openInfo(icon){
+  const d=INFO[icon.getAttribute("data-info")];if(!d)return;
+  if(!infoPop){infoPop=document.createElement("div");infoPop.className="info-pop";document.body.appendChild(infoPop);}
+  const st=typeof d.status==="function"?d.status():d.status;
+  infoPop.innerHTML='<div class="ip-title">'+esc(d.title)+'</div>'+
+    '<div class="ip-row"><b>What it means:</b> '+esc(d.what)+'</div>'+
+    '<div class="ip-row"><b>How it\'s worked out:</b> '+esc(d.formula)+'</div>'+
+    '<div class="ip-status">'+esc(st)+'</div>';
+  infoPop.style.display="block";infoPop._anchor=icon;
+  const r=icon.getBoundingClientRect(),pw=infoPop.offsetWidth||280;
+  let left=r.left;if(left+pw>window.innerWidth-10)left=window.innerWidth-10-pw;
+  infoPop.style.left=Math.max(10,left)+"px";infoPop.style.top=(r.bottom+6)+"px";
+}
+function closeInfo(){if(infoPop){infoPop.style.display="none";infoPop._anchor=null;}}
+document.addEventListener("click",e=>{
+  const icon=e.target.closest(".info-i");
+  if(icon){e.stopPropagation();if(infoPop&&infoPop._anchor===icon&&infoPop.style.display==="block")closeInfo();else openInfo(icon);return;}
+  if(!e.target.closest(".info-pop"))closeInfo();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape")closeInfo();
+  if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("info-i")){e.preventDefault();openInfo(e.target);}
+});
+window.addEventListener("scroll",closeInfo,true);
 
 // ================= plumbing =================
 function wireTabs(){
