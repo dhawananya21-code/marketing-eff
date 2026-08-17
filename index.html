@@ -204,6 +204,24 @@
   .hbar .fill{height:100%;border-radius:6px}
   .hbar .num{font-size:13px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
   .sum-empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;background:var(--bg);font-size:13px}
+  /* channel efficiency */
+  .eff-table{width:100%;border-collapse:collapse;font-size:13px}
+  .eff-table th{text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .eff-table td{padding:9px 12px;border-bottom:1px solid var(--line)}
+  .eff-table td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .idx{font-weight:700}.idx.up{color:var(--good)}.idx.down{color:var(--bad)}
+  .matrix{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.matrix{grid-template-columns:1fr}}
+  .mbox{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg)}
+  .mbox h4{margin:0 0 2px;font-size:15px}
+  .mbox .mrule{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .mbox .mdesc{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .mbox.scale{border-top:3px solid var(--good)}
+  .mbox.invest{border-top:3px solid var(--brand)}
+  .mbox.optimise{border-top:3px solid var(--warn)}
+  .mbox.reduce{border-top:3px solid var(--bad)}
+  .chip{display:inline-block;background:var(--chip);border-radius:20px;padding:4px 11px;font-size:12px;margin:3px 4px 0 0}
+  .empty-mini{color:var(--muted);font-size:12px;font-style:italic}
 </style>
 </head>
 <body>
@@ -220,6 +238,7 @@
   </div>
   <div class="tabs">
     <div class="tab active" data-tab="summary">Summary</div>
+    <div class="tab" data-tab="efficiency">Channel Efficiency</div>
     <div class="detail-nav">
       <span>View detailed records:</span>
       <span class="tablink" data-tab="activities">Activities</span>
@@ -284,6 +303,11 @@
       <div class="results-head"><div class="count" id="mktCount"></div></div>
       <div class="tablescroll"><table><thead id="mktThead"></thead><tbody id="mktTbody"></tbody></table></div>
     </div>
+  </div>
+
+  <!-- CHANNEL EFFICIENCY PAGE -->
+  <div class="page" id="page-efficiency">
+    <div id="effBody"></div>
   </div>
 </div>
 
@@ -418,6 +442,7 @@ function boot(){
   applyAct();
   applyMkt();
   renderSummary();
+  renderEfficiency();
   updateRecent();
   wireTabs();
   wireModals();
@@ -793,7 +818,7 @@ async function submitForm(){
 function refreshAfterAdd(){
   updateSubtitle();updateRecent();computeGlobalStats();
   // rebuild dropdown option universes may have changed; simplest is re-apply
-  applyAct();applyMkt();renderSummary();
+  applyAct();applyMkt();renderSummary();renderEfficiency();
 }
 
 // ================= RECENT LIST =================
@@ -1001,6 +1026,65 @@ function renderSummary(){
     host.appendChild(lineChart({title:"Sales value over time",sub:"Sum of Sales Value per month",
       months:[...byMonth.keys()].sort(),valueByMonth:byMonth,color:"var(--chart-aqua)",prefix:"₹",emptyMsg:"Not enough data yet."}));
   }
+}
+
+// ================= CHANNEL EFFICIENCY =================
+const EFF_MIN_COMBOS=5;
+// Match Marketing Channel cost with Sales value by district + month, per channel+district combo.
+function computeEfficiency(){
+  const salesDM=new Map();       // "district|month" -> total sales value
+  for(const e of manual.sales){const v=num(e.salesValue);if(!e.district||!e.month||v<=0)continue;const k=e.district+"|"+e.month;salesDM.set(k,(salesDM.get(k)||0)+v);}
+  const costCDM=new Map();        // "channel|district|month" -> total cost
+  for(const e of manual.marketing){const c=num(e.cost);if(!e.channelType||!e.district||!e.month||c<=0)continue;const k=e.channelType+"|"+e.district+"|"+e.month;costCDM.set(k,(costCDM.get(k)||0)+c);}
+  const combos=new Map();         // "channel|district" -> {channel,district,cost,sales}
+  for(const [k,cost] of costCDM){
+    const i1=k.indexOf("|"),i2=k.indexOf("|",i1+1);
+    const ch=k.slice(0,i1),dist=k.slice(i1+1,i2),month=k.slice(i2+1);
+    const sales=salesDM.get(dist+"|"+month);
+    if(sales==null)continue;       // needs BOTH cost and sales in the same district+month
+    const ck=ch+"|"+dist;const o=combos.get(ck)||{channel:ch,district:dist,cost:0,sales:0};
+    o.cost+=cost;o.sales+=sales;combos.set(ck,o);
+  }
+  const list=[...combos.values()].filter(o=>o.cost>0&&o.sales>0).map(o=>({...o,spr:o.sales/o.cost}));
+  const count=list.length;
+  const avg=count?list.reduce((s,o)=>s+o.spr,0)/count:0;
+  list.forEach(o=>{o.index=avg?Math.round(o.spr/avg*100):100;});
+  list.sort((a,b)=>b.spr-a.spr);
+  return {list,count,avg};
+}
+function renderEfficiency(){
+  const host=document.getElementById("effBody");if(!host)return;
+  const {list,count,avg}=computeEfficiency();
+  const status='<div class="banner">This analysis matches Marketing Channel <b>cost</b> with <b>Sales value</b> for the same district and month. It needs at least <b>'+EFF_MIN_COMBOS+'</b> channel + district combinations that have both. Currently: <b>'+count+' of '+EFF_MIN_COMBOS+'</b>.</div>';
+  if(count<EFF_MIN_COMBOS){
+    host.innerHTML=status+'<div class="sum-section"><h3>Spend vs Sales analysis</h3>'+
+      '<div class="sum-empty" style="padding:40px">Not enough data yet.<br><br>Sales per Rupee Spent, the Channel Efficiency Index, and the Opportunity Matrix all compare marketing spend against sales for the same district and month. They turn on automatically once at least '+EFF_MIN_COMBOS+' channel + district combinations have both cost and sales recorded.<br><br><b>'+count+' of '+EFF_MIN_COMBOS+'</b> combinations available so far.</div></div>';
+    return;
+  }
+  const rows=list.map((o,i)=>{
+    const cls=o.index>=100?"up":"down",arw=o.index>=100?"▲":"▼";
+    return '<tr><td>'+(i+1)+'</td><td>'+esc(o.channel)+' — '+esc(o.district)+'</td><td class="num">₹'+o.spr.toFixed(2)+'</td>'+
+      '<td class="num idx '+cls+'">'+arw+' '+o.index+'</td><td class="num">₹'+nf.format(Math.round(o.sales))+'</td></tr>';
+  }).join("");
+  const listCard='<div class="sum-section"><h3>Sales per rupee spent &amp; efficiency</h3>'+
+    '<div class="sdesc">Sales value ÷ marketing cost for each channel + district (matched by month). Efficiency: 100 = the average of ₹'+avg.toFixed(2)+' of sales per ₹1 spent; above 100 is better than average.</div>'+
+    '<div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>Channel — District</th><th>Sales per ₹1</th><th>Efficiency</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  // opportunity matrix: efficiency (vs 100) x total sales (vs median)
+  const salesArr=list.map(o=>o.sales).sort((a,b)=>a-b),m=salesArr.length;
+  const median=m%2?salesArr[(m-1)/2]:(salesArr[m/2-1]+salesArr[m/2])/2;
+  const g={scale:[],invest:[],optimise:[],reduce:[]};
+  list.forEach(o=>{const he=o.index>=100,hs=o.sales>=median;g[he?(hs?"scale":"invest"):(hs?"optimise":"reduce")].push(o);});
+  const boxes=[
+    {k:"scale",t:"Scale",r:"High efficiency · High sales",d:"Working well and big — do more of these."},
+    {k:"invest",t:"Invest",r:"High efficiency · Low sales",d:"Efficient but small — worth growing."},
+    {k:"optimise",t:"Optimise",r:"Low efficiency · High sales",d:"Big but wasteful — tighten the spend."},
+    {k:"reduce",t:"Reduce",r:"Low efficiency · Low sales",d:"Weak on both — consider cutting back."},
+  ];
+  const matrix='<div class="sum-section"><h3>Opportunity matrix</h3>'+
+    '<div class="sdesc">Each channel + district placed by efficiency (vs the 100 average) and total sales (vs the middle value).</div><div class="matrix">'+
+    boxes.map(b=>'<div class="mbox '+b.k+'"><h4>'+b.t+'</h4><div class="mrule">'+b.r+'</div><div class="mdesc">'+b.d+'</div>'+
+      (g[b.k].length?g[b.k].map(o=>'<span class="chip">'+esc(o.channel)+' — '+esc(o.district)+'</span>').join(""):'<span class="empty-mini">None</span>')+'</div>').join("")+'</div></div>';
+  host.innerHTML=status+listCard+matrix;
 }
 
 // ================= plumbing =================
