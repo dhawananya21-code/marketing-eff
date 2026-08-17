@@ -95,7 +95,7 @@ export default async function handler(req, res) {
 
     if (req.method === "GET") {
       const { rows } = await p.query(
-        "SELECT id, type, payload, created_at FROM manual_entries ORDER BY id DESC LIMIT 5000"
+        "SELECT id, type, payload, created_at FROM manual_entries ORDER BY id DESC LIMIT 100000"
       );
       const entries = rows.map((r) => ({
         id: Number(r.id),
@@ -112,6 +112,33 @@ export default async function handler(req, res) {
       if (!VALID_TYPES.has(type)) {
         return send(res, 400, { ok: false, error: "Unknown entry type." });
       }
+
+      // Bulk insert (CSV import): { type, entries: [payload, payload, ...] }
+      if (Array.isArray(body.entries)) {
+        const entries = body.entries;
+        if (entries.length === 0) return send(res, 200, { ok: true, configured: true, inserted: 0, created: [] });
+        if (entries.length > 1000) return send(res, 400, { ok: false, error: "Batch too large (max 1000 rows per request)." });
+        const values = [];
+        const params = [];
+        let i = 1;
+        for (const payload of entries) {
+          const pl = { ...payload };
+          delete pl.type;
+          values.push("($" + i++ + ", $" + i++ + ")");
+          params.push(type, JSON.stringify(pl));
+        }
+        const { rows } = await p.query(
+          "INSERT INTO manual_entries (type, payload) VALUES " + values.join(", ") + " RETURNING id, created_at",
+          params
+        );
+        return send(res, 201, {
+          ok: true,
+          configured: true,
+          inserted: rows.length,
+          created: rows.map((r) => ({ id: Number(r.id), created_at: r.created_at })),
+        });
+      }
+
       const payload = { ...body };
       delete payload.type;
       const { rows } = await p.query(

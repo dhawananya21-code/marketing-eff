@@ -229,6 +229,31 @@
   .info-pop .ip-title{font-weight:700;font-size:13px;margin-bottom:6px}
   .info-pop .ip-row{margin-bottom:6px}
   .info-pop .ip-status{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+  /* CSV upload */
+  .step-note{color:var(--muted);font-size:13px;margin:0 0 14px}
+  .filebox{border:2px dashed var(--line);border-radius:12px;padding:26px;text-align:center;background:var(--bg)}
+  .filebox input[type=file]{margin-top:10px}
+  .map-grid{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;padding:2px}
+  .map-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+  .map-row .of{font-weight:600;font-size:13px}
+  .map-row .of .req{color:var(--bad)}
+  .map-row .of small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+  .map-row select{width:100%;min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:6px 8px;font:inherit}
+  .map-row select.unmapped-req{border-color:var(--bad)}
+  .map-row .auto{font-size:11px;color:var(--good);font-weight:600}
+  .up-headers{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .up-headers .h{background:var(--chip);border-radius:6px;padding:3px 9px;font-size:12px}
+  .up-msg{font-size:13px;margin:12px 0;padding:10px 12px;border-radius:9px}
+  .up-msg.err{background:rgba(208,73,47,.12);color:var(--bad)}
+  .up-msg.ok{background:rgba(31,157,99,.12);color:var(--good)}
+  .up-foot{display:flex;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .progress-track{height:10px;background:var(--chip);border-radius:6px;overflow:hidden;margin:14px 0}
+  .progress-fill{height:100%;background:var(--brand);width:0;transition:width .2s}
+  .sum-stat{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0}
+  .sum-stat .b{font-size:26px;font-weight:700}
+  .sum-stat .b.skip{color:var(--warn)}
+  .skip-list{font-size:13px;color:var(--muted)}
+  .skip-list div{padding:3px 0}
 </style>
 </head>
 <body>
@@ -240,6 +265,7 @@
     </div>
     <div class="top-actions">
       <button class="btn" id="recentBtn">Recently added <span class="count-badge" id="recentCount">0</span></button>
+      <button class="btn" id="uploadBtn">⬆ Upload CSV</button>
       <button class="btn primary" id="addBtn">+ Add New Entry</button>
     </div>
   </div>
@@ -333,6 +359,14 @@
   </div>
 </div>
 
+<!-- Upload CSV modal -->
+<div class="overlay" id="uploadOverlay">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-head"><h3 id="uploadTitle">Upload CSV</h3><span class="x" id="uploadClose">&times;</span></div>
+    <div class="modal-body" id="uploadBody"></div>
+  </div>
+</div>
+
 <!-- Recent entries modal -->
 <div class="overlay" id="recentOverlay">
   <div class="modal">
@@ -416,6 +450,7 @@ function rebuildActRows(){
   const manualRows=manual.activity.map(e=>{
     const r=new Array(COLS.length).fill("");
     const set=(c,v)=>{r[IDX[c]]=v||"";};
+    set("Activity ID",e.activityId);
     set("Planned Date",e.plannedDate);set("Employee Name",e.employeeName);set("Designation",e.designation);
     set("Zone",e.zone);set("Region",e.region);set("Territory",e.territory);set("District",e.district);
     set("Activity",e.activity);set("Activity Type",e.activityType);set("Product Category",e.productCategory);
@@ -1152,6 +1187,202 @@ document.addEventListener("keydown",e=>{
 });
 window.addEventListener("scroll",closeInfo,true);
 
+// ================= CSV UPLOAD (bulk import) =================
+const TYPE_LABEL={activity:"Activities",marketing:"Marketing Channel",sales:"Sales"};
+// Our fields per type; required + kind drive validation. activityId is used for de-duplication.
+const MAP_FIELDS={
+  activity:[
+    {k:"activityId",label:"Activity ID"},
+    {k:"plannedDate",label:"Planned Date",required:true,kind:"date"},
+    {k:"employeeName",label:"Employee Name",required:true},
+    {k:"designation",label:"Designation"},
+    {k:"zone",label:"Zone"},{k:"region",label:"Region"},{k:"territory",label:"Territory"},
+    {k:"district",label:"District",required:true},
+    {k:"activity",label:"Activity"},{k:"activityType",label:"Activity Type"},
+    {k:"productCategory",label:"Product Category"},{k:"product",label:"Product"},
+    {k:"status",label:"Status"},{k:"achieved",label:"Achieved"},
+  ],
+  marketing:[
+    {k:"channelType",label:"Channel Type",required:true},
+    {k:"product",label:"Product"},
+    {k:"district",label:"District",required:true},
+    {k:"month",label:"Month",required:true,kind:"month"},
+    {k:"target",label:"Target",kind:"number"},{k:"actual",label:"Actual",kind:"number"},
+    {k:"cost",label:"Cost",kind:"number"},{k:"notes",label:"Notes"},
+  ],
+  sales:[
+    {k:"district",label:"District",required:true},
+    {k:"month",label:"Month",required:true,kind:"month"},
+    {k:"product",label:"Product",required:true},
+    {k:"salesValue",label:"Sales Value",required:true,kind:"number"},
+    {k:"unitsSold",label:"Units Sold",required:true,kind:"number"},
+  ],
+};
+let uploadState={};
+
+function parseCSV(text){
+  const rows=[];let row=[],field="",inQ=false,i=0;const n=text.length;
+  while(i<n){const c=text[i];
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i+=2;continue;} inQ=false;i++;continue;} field+=c;i++;continue; }
+    if(c==='"'){inQ=true;i++;continue;}
+    if(c===','){row.push(field);field="";i++;continue;}
+    if(c==='\r'){i++;continue;}
+    if(c==='\n'){row.push(field);rows.push(row);row=[];field="";i++;continue;}
+    field+=c;i++;
+  }
+  if(field.length||row.length){row.push(field);rows.push(row);}
+  return rows;
+}
+function normDate(s){
+  s=String(s).trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){const y=+m[1],mo=+m[2],da=+m[3];if(y>=2000&&y<=2100&&mo>=1&&mo<=12&&da>=1&&da<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");return "";}
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(m){let mo=+m[1],da=+m[2];const y=+m[3];if(mo>12&&da<=12){const t=mo;mo=da;da=t;}if(y>=2000&&y<=2100&&mo>=1&&mo<=12&&da>=1&&da<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");return "";}
+  const d=new Date(s);if(!isNaN(d)){const y=d.getFullYear();if(y>=2000&&y<=2100)return d.toISOString().slice(0,10);}
+  return "";
+}
+function normMonth(s){
+  s=String(s).trim();
+  let m=s.match(/^(\d{4})-(\d{1,2})/);if(m){const mo=+m[2];if(mo>=1&&mo<=12)return m[1]+"-"+String(mo).padStart(2,"0");}
+  m=s.match(/^(\d{1,2})[\/\-](\d{4})$/);if(m){const mo=+m[1];if(mo>=1&&mo<=12)return m[2]+"-"+String(mo).padStart(2,"0");}
+  const names=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  m=s.toLowerCase().match(/([a-z]{3,})[a-z]*\s+(\d{4})/);if(m){const idx=names.indexOf(m[1].slice(0,3));if(idx>=0)return m[2]+"-"+String(idx+1).padStart(2,"0");}
+  const d=new Date(s);if(!isNaN(d)){const y=d.getFullYear();if(y>=2000&&y<=2100)return y+"-"+String(d.getMonth()+1).padStart(2,"0");}
+  return "";
+}
+function parseNum(s){const t=String(s).replace(/[^0-9.\-]/g,"");if(t===""||t==="-"||t===".")return null;const n=parseFloat(t);return isNaN(n)?null:n;}
+function normHead(s){return String(s).toLowerCase().replace(/[^a-z0-9]/g,"");}
+function autoMatch(f,headers){const targets=[normHead(f.label),normHead(f.k)];for(let i=0;i<headers.length;i++){if(targets.includes(normHead(headers[i])))return i;}return -1;}
+function existingActivityIds(){const s=new Set(),ci=IDX["Activity ID"];for(const r of ROWS){const v=r[ci];if(v)s.add(String(v));}for(const e of manual.activity){if(e.activityId)s.add(String(e.activityId));}return s;}
+
+function openUpload(){document.getElementById("uploadOverlay").classList.add("open");showUploadChooser();}
+function closeUpload(){document.getElementById("uploadOverlay").classList.remove("open");}
+function showUploadChooser(){
+  document.getElementById("uploadTitle").textContent="Upload CSV";
+  const body=document.getElementById("uploadBody");
+  body.innerHTML='<p class="step-note">Step 1 of 3 — what kind of data is in this file?</p><div class="choose">'+
+    '<button data-t="activity"><b>Activities</b><span>Field activities — like the activity export.</span></button>'+
+    '<button data-t="marketing"><b>Marketing Channel</b><span>Channel campaigns — channel type, district, month, cost…</span></button>'+
+    '<button data-t="sales"><b>Sales</b><span>Sales records — district, month, product, value, units.</span></button></div>';
+  body.querySelectorAll(".choose button").forEach(b=>b.addEventListener("click",()=>showUploadFile(b.getAttribute("data-t"))));
+}
+function showUploadFile(type){
+  uploadState={type};
+  document.getElementById("uploadTitle").textContent="Upload CSV — "+TYPE_LABEL[type];
+  const body=document.getElementById("uploadBody");
+  body.innerHTML='<p class="step-note">Step 2 of 3 — choose your CSV file. It can have any column names or order, and extra columns are fine — you\'ll match them next.</p>'+
+    '<div class="filebox">📄 Select a .csv file from your computer<br><input type="file" id="csvFile" accept=".csv,text/csv"></div>'+
+    '<div id="fileMsg"></div>'+
+    '<div class="up-foot"><button class="btn" id="fileBack">&larr; Back</button><span></span></div>';
+  document.getElementById("fileBack").addEventListener("click",showUploadChooser);
+  document.getElementById("csvFile").addEventListener("change",async e=>{
+    const file=e.target.files[0];if(!file)return;
+    let text;try{text=await file.text();}catch(err){document.getElementById("fileMsg").innerHTML='<div class="up-msg err">Could not read that file.</div>';return;}
+    const rows=parseCSV(text).filter(r=>!(r.length===1&&r[0].trim()===""));
+    if(rows.length<2){document.getElementById("fileMsg").innerHTML='<div class="up-msg err">This file needs a header row plus at least one row of data.</div>';return;}
+    uploadState.headers=rows[0].map(h=>h.trim());
+    uploadState.dataRows=rows.slice(1);
+    showMapping(type);
+  });
+}
+function showMapping(type){
+  const headers=uploadState.headers,dataRows=uploadState.dataRows,fields=MAP_FIELDS[type];
+  const body=document.getElementById("uploadBody");
+  const mapping={};fields.forEach(f=>{mapping[f.k]=autoMatch(f,headers);});
+  const opt=(sel)=>'<option value="-1">— none —</option>'+headers.map((h,i)=>'<option value="'+i+'"'+(i===sel?" selected":"")+'>'+esc(h)+'</option>').join("");
+  const rowsHtml=fields.map(f=>{
+    const auto=mapping[f.k]>=0;
+    return '<div class="map-row"><div class="of">'+esc(f.label)+(f.required?' <span class="req">*</span>':"")+
+      (f.k==="activityId"?'<small>used to avoid importing the same activity twice</small>':"")+'</div>'+
+      '<div><select data-k="'+f.k+'">'+opt(mapping[f.k])+'</select>'+(auto?' <span class="auto">auto-matched</span>':"")+'</div></div>';
+  }).join("");
+  body.innerHTML='<p class="step-note">Step 3 of 3 — match your file\'s columns to our fields. We\'ve auto-matched any with the same name; fields marked <span style="color:var(--bad)">*</span> are required.</p>'+
+    '<p class="step-note">Columns found in your file ('+nf.format(dataRows.length)+' data rows):</p><div class="up-headers">'+headers.map(h=>'<span class="h">'+esc(h)+'</span>').join("")+'</div>'+
+    '<div id="mapMsg"></div><div class="map-grid">'+rowsHtml+'</div>'+
+    '<div class="up-foot"><button class="btn" id="mapBack">&larr; Back</button><button class="btn primary" id="mapImport">Import data</button></div>';
+  body.querySelectorAll("select[data-k]").forEach(s=>s.addEventListener("change",()=>{mapping[s.getAttribute("data-k")]=parseInt(s.value,10);s.classList.remove("unmapped-req");}));
+  document.getElementById("mapBack").addEventListener("click",()=>showUploadFile(type));
+  document.getElementById("mapImport").addEventListener("click",()=>{
+    const missing=fields.filter(f=>f.required&&!(mapping[f.k]>=0));
+    if(missing.length){
+      document.getElementById("mapMsg").innerHTML='<div class="up-msg err">These required fields aren\'t matched to a column yet: <b>'+missing.map(f=>esc(f.label)).join(", ")+'</b>. Pick a column for each — or if your file doesn\'t have it, that data can\'t be imported.</div>';
+      missing.forEach(f=>{const s=body.querySelector('select[data-k="'+f.k+'"]');if(s)s.classList.add("unmapped-req");});
+      return;
+    }
+    runImport(type,fields,mapping,dataRows);
+  });
+}
+function processRows(type,fields,mapping,dataRows){
+  const valid=[],skips=new Map();
+  const addSkip=r=>skips.set(r,(skips.get(r)||0)+1);
+  let existing=null,seen=null;
+  if(type==="activity"){existing=existingActivityIds();seen=new Set();}
+  for(const dr of dataRows){
+    const out={};let bad=null;
+    for(const f of fields){
+      const idx=mapping[f.k];
+      const raw=(idx==null||idx<0)?"":(dr[idx]!==undefined?String(dr[idx]).trim():"");
+      let val;
+      if(f.kind==="date"){val=raw?normDate(raw):"";if(raw&&!val)bad=bad||("invalid date in "+f.label);}
+      else if(f.kind==="month"){val=raw?normMonth(raw):"";if(raw&&!val)bad=bad||("invalid month in "+f.label);}
+      else if(f.kind==="number"){const nn=raw?parseNum(raw):null;if(raw&&nn==null&&f.required)bad=bad||("invalid number in "+f.label);val=(nn==null)?null:nn;}
+      else val=raw;
+      if(f.required&&(val===""||val==null)&&!bad)bad=bad||("missing "+f.label);
+      out[f.k]=val;
+    }
+    if(bad){addSkip(bad);continue;}
+    if(type==="activity"){
+      const id=out.activityId?String(out.activityId):"";
+      if(id){if(existing.has(id)||seen.has(id)){addSkip("duplicate Activity ID");continue;}seen.add(id);}
+    }
+    valid.push(out);
+  }
+  return {valid,skips};
+}
+async function bulkInsert(type,payloads,onProg){
+  const BATCH=500,inserted=[];
+  for(let i=0;i<payloads.length;i+=BATCH){
+    const chunk=payloads.slice(i,i+BATCH);
+    const r=await fetch("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type,entries:chunk})});
+    const j=await r.json();
+    if(!r.ok||!j.ok)throw new Error(j.error||"the server rejected the import.");
+    (j.created||[]).forEach((c,idx)=>inserted.push({id:c.id,type,created_at:c.created_at,...chunk[idx]}));
+    if(onProg)onProg(Math.min(i+BATCH,payloads.length),payloads.length);
+  }
+  return inserted;
+}
+async function runImport(type,fields,mapping,dataRows){
+  const body=document.getElementById("uploadBody");
+  const {valid,skips}=processRows(type,fields,mapping,dataRows);
+  const skipTotal=[...skips.values()].reduce((a,b)=>a+b,0);
+  if(!valid.length){showImportSummary(0,skipTotal,skips,"Nothing could be imported — none of the rows were usable.");return;}
+  body.innerHTML='<p class="step-note">Importing '+nf.format(valid.length)+' rows… please keep this window open.</p>'+
+    '<div class="progress-track"><div class="progress-fill" id="upProg"></div></div><div id="upProgTxt" class="step-note"></div>';
+  let inserted;
+  try{
+    inserted=await bulkInsert(type,valid,(done,total)=>{
+      document.getElementById("upProg").style.width=Math.round(done/total*100)+"%";
+      document.getElementById("upProgTxt").textContent=nf.format(done)+" of "+nf.format(total)+" saved";
+    });
+  }catch(e){showImportSummary(0,skipTotal,skips,"Import failed — "+e.message+" No partial data was left in a broken state.");return;}
+  for(const it of inserted)manual[type].push(it);
+  if(type==="activity")rebuildActRows();
+  dbConfigured=true;refreshAfterAdd();
+  showImportSummary(inserted.length,skipTotal,skips,"");
+  toast("Imported "+nf.format(inserted.length)+" row"+(inserted.length===1?"":"s")+".");
+}
+function showImportSummary(added,skipTotal,skips,errMsg){
+  const body=document.getElementById("uploadBody");
+  const skipHtml=skips.size?'<div class="skip-list">'+[...skips.entries()].map(([r,c])=>'<div>• '+esc(r)+': '+nf.format(c)+' row'+(c===1?"":"s")+'</div>').join("")+'</div>':"";
+  body.innerHTML=(errMsg?'<div class="up-msg err">'+esc(errMsg)+'</div>':'<div class="up-msg ok">Import complete — the data is saved and will stay after a refresh.</div>')+
+    '<div class="sum-stat"><div><div class="b">'+nf.format(added)+'</div><div class="step-note">rows added</div></div>'+
+    '<div><div class="b skip">'+nf.format(skipTotal)+'</div><div class="step-note">rows skipped</div></div></div>'+
+    (skipTotal?'<p class="step-note">Why rows were skipped:</p>'+skipHtml:"")+
+    '<div class="up-foot"><span></span><button class="btn primary" id="upDone">Done</button></div>';
+  document.getElementById("upDone").addEventListener("click",closeUpload);
+}
+
 // ================= plumbing =================
 function wireTabs(){
   document.querySelectorAll("[data-tab]").forEach(t=>t.addEventListener("click",()=>{
@@ -1164,6 +1395,9 @@ function wireTabs(){
 function wireModals(){
   document.getElementById("addBtn").addEventListener("click",openAdd);
   document.getElementById("addClose").addEventListener("click",closeAdd);
+  document.getElementById("uploadBtn").addEventListener("click",openUpload);
+  document.getElementById("uploadClose").addEventListener("click",closeUpload);
+  document.getElementById("uploadOverlay").addEventListener("click",e=>{if(e.target.id==="uploadOverlay")closeUpload();});
   document.getElementById("formBack").addEventListener("click",showChooser);
   document.getElementById("formSubmit").addEventListener("click",submitForm);
   document.getElementById("addOverlay").addEventListener("click",e=>{if(e.target.id==="addOverlay")closeAdd();});
