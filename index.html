@@ -190,6 +190,11 @@
   .tile{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
   .tile .n{font-size:22px;font-weight:650;letter-spacing:-.02em}
   .tile .l{color:var(--muted);font-size:12px;margin-top:2px}
+  .tile .sub{font-size:12px;margin-top:6px;color:var(--muted);font-weight:600}
+  .tile .sub .up{color:var(--good)}
+  .tile .sub .down{color:var(--bad)}
+  .insight{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:18px;font-size:14px;line-height:1.5}
+  .insight .ico{font-size:16px;line-height:1.4}
   .subhead{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 8px}
   .breakdowns{display:grid;grid-template-columns:1fr 1fr;gap:22px}
   @media(max-width:760px){.breakdowns{grid-template-columns:1fr}.sum-section .charts{grid-template-columns:1fr}}
@@ -409,6 +414,7 @@ function boot(){
   buildActFilters();
   buildMktFilters();
   buildSummaryControls();
+  computeGlobalStats();
   applyAct();
   applyMkt();
   renderSummary();
@@ -785,7 +791,7 @@ async function submitForm(){
   btn.disabled=false;
 }
 function refreshAfterAdd(){
-  updateSubtitle();updateRecent();
+  updateSubtitle();updateRecent();computeGlobalStats();
   // rebuild dropdown option universes may have changed; simplest is re-apply
   applyAct();applyMkt();renderSummary();
 }
@@ -844,8 +850,56 @@ function summaryValueCounts(dim,q){
 function monthInRange(month,from,to){const f=from?from.slice(0,7):"",t=to?to.slice(0,7):"";if(f&&month<f)return false;if(t&&month>t)return false;return true;}
 function countBy(rows,ci){const m=new Map();for(const r of rows){const v=r[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
 function countByKey(entries,key){const m=new Map();for(const e of entries){const v=e[key];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
-function tile(n,l){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div></div>';}
-function tiles(a){return '<div class="tiles">'+a.map(x=>tile(x.n,x.l)).join("")+'</div>';}
+function tile(n,l,sub){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';}
+function tiles(a){return '<div class="tiles">'+a.map(x=>tile(x.n,x.l,x.sub)).join("")+'</div>';}
+function ordinal(n){const v=n%100,s=["th","st","nd","rd"];return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+// ---- overall (all-activities) baselines for comparison ----
+let GLOBAL={total:0,completed:0,compRate:0,byDistrict:new Map(),byProduct:new Map()};
+function computeGlobalStats(){
+  const si=IDX.Status,di=IDX.District,pi=IDX.Product;
+  const g={total:0,completed:0,byDistrict:new Map(),byProduct:new Map()};
+  for(const r of ACT_ROWS){
+    g.total++;const done=r[si]==="Completed";if(done)g.completed++;
+    const d=r[di];if(d){const o=g.byDistrict.get(d)||{count:0};o.count++;g.byDistrict.set(d,o);}
+    const p=r[pi];if(p){const o=g.byProduct.get(p)||{count:0};o.count++;g.byProduct.set(p,o);}
+  }
+  g.compRate=g.total?g.completed/g.total:0;GLOBAL=g;
+}
+function rankInfo(sel){
+  const map=sel.dim==="district"?GLOBAL.byDistrict:GLOBAL.byProduct;
+  const mine=(map.get(sel.value)||{count:0}).count;
+  let rank=1;for(const [,o] of map)if(o.count>mine)rank++;
+  return {rank,total:map.size,count:mine};
+}
+function generateInsight(sel){
+  const rows=summaryActivities(sel);
+  const mkt=summaryMarketing(sel),sales=summarySales(sel);
+  const hasMkt=mkt.length>0,hasSales=sales&&sales.length>0;
+  const parts=[];
+  if(rows===null){ // channel type: activities/sales not linked
+    if(hasMkt){let cost=0;for(const e of mkt)cost+=num(e.cost);
+      parts.push(esc(sel.value)+" has "+nf.format(mkt.length)+" marketing "+(mkt.length===1?"campaign":"campaigns")+" logged"+(cost?" costing ₹"+nf.format(cost):"")+".");}
+    else parts.push("No marketing campaigns have been logged for "+esc(sel.value)+" yet.");
+    parts.push("Field activities and sales aren't tracked by channel type.");
+    return parts.join(" ");
+  }
+  const subject=sel.dim==="date"?"This date range":esc(sel.value);
+  if(!rows.length){
+    parts.push("No field activities are recorded for "+(sel.dim==="date"?"this date range":subject)+".");
+  }else{
+    const n=rows.length;let completed=0;for(const r of rows)if(r[IDX.Status]==="Completed")completed++;
+    const rate=Math.round(completed/n*100),g=Math.round(GLOBAL.compRate*100),diff=rate-g;
+    let rankTxt="";
+    if(sel.dim==="district"||sel.dim==="product"){const ri=rankInfo(sel);rankTxt=" ("+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products")+" by volume)";}
+    const cmp=Math.abs(diff)<2?"about the "+g+"% average":(diff>0?"above the "+g+"% average":"below the "+g+"% average");
+    parts.push(subject+" had "+nf.format(n)+" field "+(n===1?"activity":"activities")+rankTxt+", with a completion rate of "+rate+"% — "+cmp+".");
+  }
+  const miss=[];if(!hasMkt)miss.push("marketing channel");if(!hasSales)miss.push("sales");
+  if(miss.length)parts.push("No "+miss.join(" or ")+" data has been added for "+(sel.dim==="date"?"it":"this "+sel.dim)+" yet.");
+  else parts.push("Marketing and sales figures are shown below too.");
+  return parts.join(" ");
+}
 function hbars(counts,o){
   o=o||{};const color=o.color||"var(--brand)",limit=o.limit||5,prefix=o.prefix||"",fmt=o.fmt||nf.format;
   const list=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]).slice(0,limit);
@@ -888,7 +942,13 @@ function sectionActivities(sel){
   else{
     const n=rows.length,si=IDX.Status,ei=IDX["Employee Name"];let completed=0;const emps=new Set();
     for(const r of rows){if(r[si]==="Completed")completed++;if(r[ei])emps.add(r[ei]);}
-    const t=tiles([{n:nf.format(n),l:"Total activities"},{n:(n?Math.round(completed/n*100)+"%":"–"),l:"Completion rate"},{n:nf.format(emps.size),l:"Employees involved"}]);
+    const rate=n?Math.round(completed/n*100):0,g=Math.round(GLOBAL.compRate*100),diff=rate-g;
+    let totalSub;
+    if(sel.dim==="district"||sel.dim==="product"){const ri=rankInfo(sel);totalSub="ranks "+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products");}
+    else{totalSub=(GLOBAL.total?Math.round(n/GLOBAL.total*100):0)+"% of all activities";}
+    const cls=Math.abs(diff)<2?"":(diff>0?"up":"down"),arw=Math.abs(diff)<2?"":(diff>0?"▲ ":"▼ ");
+    const rateSub='<span class="'+cls+'">'+arw+"overall avg "+g+"%</span>";
+    const t=tiles([{n:nf.format(n),l:"Total activities",sub:totalSub},{n:(n?rate+"%":"–"),l:"Completion rate",sub:rateSub},{n:nf.format(emps.size),l:"Employees involved"}]);
     const b1=hbars(countBy(rows,IDX.Activity),{color:"var(--brand)"});
     let b2t,b2;
     if(sel.dim==="district"){b2t="Top products";b2=hbars(countBy(rows,IDX.Product),{color:"var(--brand)"});}
@@ -932,6 +992,7 @@ function renderSummary(){
   const dimLabel={product:"Product",district:"District",channelType:"Marketing Channel Type",date:"Date Range"}[sumDim];
   const valLabel=sumDim==="date"?(fmtNiceDate(sumFrom)+" → "+fmtNiceDate(sumTo)):sumValue;
   body.innerHTML='<div class="banner">Showing everything connected to <b>'+esc(dimLabel)+': '+esc(valLabel)+'</b></div>'+
+    '<div class="insight"><span class="ico">💡</span><span>'+generateInsight(sel)+'</span></div>'+
     sectionActivities(sel)+sectionMarketing(sel)+sectionSales(sel);
   const host=document.getElementById("sumSalesChart");
   if(host){
