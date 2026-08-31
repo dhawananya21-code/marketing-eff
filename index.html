@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marketing Activity Dashboard</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/leaflet-heat.js"></script>
 <style>
   :root{
     --bg:#f5f7fa; --panel:#ffffff; --ink:#1a2233; --muted:#66738a;
@@ -141,6 +144,20 @@
   .sdot.act{background:var(--brand)}.sdot.sal{background:var(--warn)}
   .bd2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
   @media(max-width:700px){.bd2{grid-template-columns:1fr}}
+  /* overview sub-tabs */
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;border-bottom:1px solid var(--line)}
+  .subtab{padding:8px 14px;border:1px solid transparent;border-bottom:none;border-radius:9px 9px 0 0;cursor:pointer;font-weight:600;color:var(--muted);font-size:13px}
+  .subtab:hover{color:var(--ink)}
+  .subtab.active{color:var(--brand);background:var(--panel);border-color:var(--line);position:relative;top:1px}
+  .showall{display:inline-block;margin-top:8px;color:var(--brand);cursor:pointer;font-size:12px;font-weight:600}
+  .attn-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .attn-name{font-weight:600}.attn-name .attn-meta{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
+  .attn-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .attn-tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+  .attn-tag.sev2{background:rgba(208,73,47,.14);color:var(--bad)}
+  .attn-tag.sev1{background:rgba(201,130,11,.16);color:var(--warn)}
+  .ovmap{height:360px;border-radius:var(--radius);border:1px solid var(--line);overflow:hidden;background:var(--chip)}
+  .leaflet-container{background:var(--chip)!important}
 
   /* channel efficiency */
   .eff-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -261,6 +278,14 @@
     <div class="ov-tiles" id="ovTiles"></div>
     <div class="breakdowns" id="ovBreak"></div>
     <div class="ov-note" id="ovNote"></div>
+    <div id="ovMapWrap"></div>
+    <div class="subtabs" id="ovSubtabs">
+      <span class="subtab active" data-sub="product">By Product</span>
+      <span class="subtab" data-sub="region">By Region</span>
+      <span class="subtab" data-sub="month">By Month</span>
+      <span class="subtab" data-sub="attention">Needs Attention</span>
+    </div>
+    <div id="ovSubBody"></div>
   </div>
 
   <!-- EXPLORE (dropdown summary) -->
@@ -273,6 +298,7 @@
       <div class="field" id="exValueWrap"></div>
     </div>
     <div id="exBody"></div>
+    <div id="exMapWrap" style="display:none;margin-top:18px"></div>
   </div>
 
   <!-- ACTIVITIES (merged, detailed records) -->
@@ -336,7 +362,8 @@
 <script>
 "use strict";
 // ---- unified activity columns ----
-const UF={activityId:0,type:1,name:2,product:3,date:4,region:5,reach:6,cost:7,employee:8,designation:9,zone:10,territory:11,status:12,achieved:13,category:14,origin:15};
+const UF={activityId:0,type:1,name:2,product:3,date:4,region:5,reach:6,cost:7,employee:8,designation:9,zone:10,territory:11,status:12,achieved:13,category:14,origin:15,lat:16,lon:17};
+const UCOLS=18;
 const UACT_TABLE=[["type","Type"],["name","Activity"],["product","Product"],["date","Date"],["region","Region / District"],
   ["reach","Farmer Reach"],["cost","Cost"],["employee","Employee"],["designation","Designation"],["zone","Zone"],
   ["status","Status"],["achieved","Achieved"],["category","Product Category"]];
@@ -367,6 +394,8 @@ let dbConfigured=false;
 let DATE_MIN="",DATE_MAX="";
 let actSel={},actFrom="",actTo="",actPage=0,actFiltered=[];
 let ovFilters={};
+let ovSub="product";
+let ovExpanded={};
 let exDim="district",exValue="",exFrom="",exTo="";
 let GLOBAL={statusable:0,completed:0,compRate:0,byRegion:new Map(),byProduct:new Map()};
 let currentTab="overview";
@@ -388,7 +417,8 @@ function ingest(entries){manual={activity:[],marketing:[],sales:[]};for(const e 
 
 // ---- migration / unify ----
 function csvToUnified(r){
-  const U=new Array(16);
+  const U=new Array(UCOLS);
+  U[UF.lat]=r[IDX["Latitude"]]||"";U[UF.lon]=r[IDX["Longitude"]]||"";
   U[UF.activityId]=r[IDX["Activity ID"]]||"";U[UF.type]="Field";U[UF.name]=r[IDX["Activity"]]||"";
   U[UF.product]=r[IDX["Product"]]||"";U[UF.date]=r[IDX["Planned Date"]]||"";U[UF.region]=r[IDX["District"]]||"";
   U[UF.reach]="";U[UF.cost]="";U[UF.employee]=r[IDX["Employee Name"]]||"";U[UF.designation]=r[IDX["Designation"]]||"";
@@ -397,7 +427,7 @@ function csvToUnified(r){
   return U;
 }
 function entryToUnified(e,type){
-  const U=new Array(16).fill("");U[UF.origin]="manual";
+  const U=new Array(UCOLS).fill("");U[UF.origin]="manual";
   if(type==="marketing"){
     U[UF.activityId]="";U[UF.type]=channelToType(e.channelType);U[UF.name]=e.channelType||"";U[UF.product]=e.product||"";
     U[UF.date]=e.month?e.month+"-01":"";U[UF.region]=e.district||"";U[UF.reach]=numOrBlank(e.actual);U[UF.cost]=numOrBlank(e.cost);
@@ -433,6 +463,7 @@ function boot(){
   computeGlobalStats();
   applyAct();renderOverview();renderExplore();renderEfficiency();updateRecent();
   wireTabs();wireModals();
+  initMaps();
 }
 function updateSubtitle(){
   let s=nf.format(UROWS.length)+" activities ("+nf.format(manualActivityCount())+" added manually)";
@@ -568,17 +599,71 @@ function renderOverview(){
   document.getElementById("ovNote").innerHTML='Every underlined name is clickable. <a id="ovToList" style="color:var(--brand);cursor:pointer;font-weight:600">View these '+nf.format(rows.length)+' records in the Activities list →</a>';
   const toList=document.getElementById("ovToList");if(toList)toList.addEventListener("click",overviewToActivities);
   const clr=document.getElementById("ovClear");if(clr)clr.addEventListener("click",()=>{ovFilters={};renderOverview();});
+  document.querySelectorAll("#ovSubtabs .subtab").forEach(s=>s.classList.toggle("active",s.getAttribute("data-sub")===ovSub));
+  renderOvSub();
+  if(window._ovMapReady)updateOvMap();
+}
+// ---- Overview sub-tabs ----
+function aggBy(rows,idx){const m=new Map();for(const u of rows){const k=u[idx];if(!k)continue;let o=m.get(k);if(!o){o={count:0,completed:0,statusable:0,reach:0,cost:0};m.set(k,o);}o.count++;const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){o.statusable++;if(st==="Completed")o.completed++;}o.reach+=num(u[UF.reach]);o.cost+=num(u[UF.cost]);}return m;}
+function pctCell(o){return o.statusable?Math.round(o.completed/o.statusable*100)+"%":"–";}
+function subTable(rows,idx,label){
+  const list=[...aggBy(rows,idx).entries()].sort((a,b)=>b[1].count-a[1].count);
+  if(!list.length)return '<div class="sum-empty">No data for this view.</div>';
+  const body=list.map(([k,o])=>'<tr><td>'+esc(k)+'</td><td class="num">'+nf.format(o.count)+'</td><td class="num">'+pctCell(o)+'</td><td class="num">'+nf.format(o.reach)+'</td><td class="num">'+(o.cost?"₹"+nf.format(o.cost):"–")+'</td></tr>').join("");
+  return '<div class="sum-section" style="padding:0"><div class="tablescroll" style="max-height:58vh"><table class="eff-table"><thead><tr><th>'+esc(label)+'</th><th>Activities</th><th>Completion</th><th>Farmer reach</th><th>Cost</th></tr></thead><tbody>'+body+'</tbody></table></div></div><div class="ov-note">'+nf.format(list.length)+' '+esc(label.toLowerCase())+(list.length===1?"":"s")+' — full list, sorted by activity volume.</div>';
+}
+function fmtMonthLabel(m){const p=String(m).split("-");const names=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const mo=parseInt(p[1],10);return (names[mo-1]||p[1])+" "+p[0];}
+function subMonth(rows){
+  const m=new Map();for(const u of rows){const d=u[UF.date];if(!d||d.length<7)continue;const mo=d.slice(0,7);let o=m.get(mo);if(!o){o={count:0,completed:0,statusable:0,reach:0,cost:0};m.set(mo,o);}o.count++;const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){o.statusable++;if(st==="Completed")o.completed++;}o.reach+=num(u[UF.reach]);o.cost+=num(u[UF.cost]);}
+  const months=[...m.keys()].sort();if(!months.length)return '<div class="sum-empty">No dated activity in this view.</div>';
+  const max=Math.max(...months.map(k=>m.get(k).count));
+  const bars=months.map(k=>{const o=m.get(k),w=Math.max(4,Math.round(o.count/max*100));return '<div class="hbar"><div class="lbl">'+esc(fmtMonthLabel(k))+'</div><div class="track"><div class="fill" style="width:'+w+'%;background:var(--brand)"></div></div><div class="num">'+nf.format(o.count)+'</div></div>';}).join("");
+  const rowsT=months.map(k=>{const o=m.get(k);return '<tr><td>'+esc(fmtMonthLabel(k))+'</td><td class="num">'+nf.format(o.count)+'</td><td class="num">'+pctCell(o)+'</td><td class="num">'+nf.format(o.reach)+'</td><td class="num">'+(o.cost?"₹"+nf.format(o.cost):"–")+'</td></tr>';}).join("");
+  return '<div class="bd-card"><h3>Activity by month</h3><div class="sdesc">Number of activities each month — the trend over time.</div>'+bars+'</div><div class="sum-section" style="padding:0;margin-top:16px"><div class="tablescroll"><table class="eff-table"><thead><tr><th>Month</th><th>Activities</th><th>Completion</th><th>Farmer reach</th><th>Cost</th></tr></thead><tbody>'+rowsT+'</tbody></table></div></div>';
+}
+function subAttention(rows){
+  const m=aggBy(rows,UF.region);
+  const counts=[...m.values()].map(o=>o.count).sort((a,b)=>a-b);
+  const median=counts.length?counts[Math.floor(counts.length/2)]:0;
+  const gAvg=Math.round(GLOBAL.compRate*100);
+  const costDist=new Set();for(const u of rows){if(num(u[UF.cost])>0&&u[UF.region])costDist.add(u[UF.region]);}
+  const salesDist=new Set();for(const e of manual.sales){if(e.district)salesDist.add(e.district);}
+  const flags=[];
+  for(const [dist,o] of m){
+    const reasons=[];const rate=o.statusable?Math.round(o.completed/o.statusable*100):null;
+    if(rate!=null&&o.statusable>=20&&rate<=gAvg-15)reasons.push({t:"Low completion "+rate+"% (avg "+gAvg+"%)",sev:2});
+    if(o.count>0&&median>0&&o.count<median*0.15)reasons.push({t:"Very little activity ("+nf.format(o.count)+")",sev:1});
+    if(o.count>=Math.max(median,1)&&!costDist.has(dist)&&!salesDist.has(dist))reasons.push({t:"No marketing or sales data",sev:2});
+    if(reasons.length)flags.push({dist,o,reasons,sev:Math.max(...reasons.map(r=>r.sev))});
+  }
+  flags.sort((a,b)=>b.sev-a.sev||b.o.count-a.o.count);
+  if(!flags.length)return '<div class="sum-empty">Nothing stands out as concerning for the current view. 👍</div>';
+  const items=flags.slice(0,30).map(f=>'<div class="attn-row"><div class="attn-name">'+esc(f.dist)+'<span class="attn-meta">'+nf.format(f.o.count)+' activities · '+pctCell(f.o)+' completion</span></div><div class="attn-tags">'+f.reasons.map(r=>'<span class="attn-tag sev'+r.sev+'">'+esc(r.t)+'</span>').join("")+'</div></div>').join("");
+  const more=flags.length>30?'<div class="ov-note">Showing the 30 most concerning of '+nf.format(flags.length)+' flagged districts.</div>':"";
+  return '<div class="sum-section"><h3>Needs attention</h3><div class="sdesc">Districts that stand out — low completion, very little activity, or no marketing/sales data. Respects the current filter above.</div>'+items+more+'</div>';
+}
+function renderOvSub(){
+  const rows=ovSubset(),host=document.getElementById("ovSubBody");if(!host)return;
+  if(ovSub==="product")host.innerHTML=subTable(rows,UF.product,"Product");
+  else if(ovSub==="region")host.innerHTML=subTable(rows,UF.region,"District");
+  else if(ovSub==="month")host.innerHTML=subMonth(rows);
+  else host.innerHTML=subAttention(rows);
 }
 function typeColor(label){return label==="Digital"?"var(--digital)":label==="OOH"?"var(--ooh)":label==="Field"?"var(--field)":"var(--brand)";}
 function bdCard(title,desc,counts,field,limit,colorFn){
-  const list=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]).slice(0,limit);
+  const all=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]);
+  const expanded=!!ovExpanded[field];
+  const list=expanded?all:all.slice(0,limit);
   let body;
-  if(!list.length)body='<div class="sum-empty">No data.</div>';
-  else{const max=list[0][1]||1;body=list.map(([k,v])=>{const w=Math.max(4,Math.round(v/max*100));const col=colorFn?colorFn(k):"var(--brand)";
-    return '<div class="hbar"><div class="lbl"><span class="ov-click" data-f="'+esc(field)+'" data-v="'+esc(k)+'">'+esc(k)+'</span></div><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><div class="num">'+nf.format(v)+'</div></div>';}).join("");}
+  if(!all.length)body='<div class="sum-empty">No data.</div>';
+  else{const max=all[0][1]||1;let bars=list.map(([k,v])=>{const w=Math.max(4,Math.round(v/max*100));const col=colorFn?colorFn(k):"var(--brand)";
+    return '<div class="hbar"><div class="lbl"><span class="ov-click" data-f="'+esc(field)+'" data-v="'+esc(k)+'">'+esc(k)+'</span></div><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><div class="num">'+nf.format(v)+'</div></div>';}).join("");
+    if(expanded)bars='<div style="max-height:300px;overflow-y:auto">'+bars+'</div>';
+    body=bars+(all.length>limit?'<span class="showall" data-exp="'+esc(field)+'">'+(expanded?"Show less":"Show all ("+nf.format(all.length)+")")+'</span>':"");}
   return '<div class="bd-card"><h3>'+esc(title)+'</h3><div class="sdesc">'+esc(desc)+'</div>'+body+'</div>';
 }
 document.getElementById("page-overview").addEventListener("click",e=>{
+  const sa=e.target.closest(".showall");if(sa){const f=sa.getAttribute("data-exp");ovExpanded[f]=!ovExpanded[f];renderOverview();return;}
   const c=e.target.closest(".ov-click");if(c){ovFilters[c.getAttribute("data-f")]=c.getAttribute("data-v");renderOverview();return;}
   const rm=e.target.closest("[data-rm]");if(rm){delete ovFilters[rm.getAttribute("data-rm")];renderOverview();}
 });
@@ -589,6 +674,47 @@ function overviewToActivities(){
   applyAct();switchTab("activities");
 }
 function countBy(rows,ci){const m=new Map();for(const u of rows){const v=u[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
+
+// ---- activity heatmap (Leaflet) ----
+let ovMap=null,ovHeat=null,exMap=null,exHeat=null;
+const HEAT_CAP=6000;
+function heatPoints(rows){
+  const pts=[],li=UF.lat,oi=UF.lon;
+  for(const u of rows){const la=parseFloat(u[li]),lo=parseFloat(u[oi]);if(!la||!lo)continue;pts.push([la,lo,1]);}
+  if(pts.length>HEAT_CAP){const step=Math.ceil(pts.length/HEAT_CAP),s=[];for(let i=0;i<pts.length;i+=step)s.push(pts[i]);return s;}
+  return pts;
+}
+function newMap(id){
+  const map=L.map(id,{scrollWheelZoom:false,attributionControl:true}).setView([22.6,80],4);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:12,attribution:"© OpenStreetMap"}).addTo(map);
+  return map;
+}
+function initMaps(){
+  if(typeof L==="undefined")return; // library failed to load — skip map, page still works
+  document.getElementById("ovMapWrap").innerHTML='<div class="bd-card" style="margin-bottom:18px"><h3>Activity heatmap</h3><div class="sdesc">Brighter where there is more activity. Uses the location saved on each record and updates with your filters (points shown: <span id="ovMapCount">0</span>).</div><div class="ovmap" id="ovmap"></div></div>';
+  try{ovMap=newMap("ovmap");window._ovMapReady=true;updateOvMap();}catch(e){window._ovMapReady=false;}
+}
+function updateOvMap(){
+  if(!ovMap)return;const pts=heatPoints(ovSubset());
+  if(ovHeat){ovMap.removeLayer(ovHeat);ovHeat=null;}
+  if(pts.length)ovHeat=L.heatLayer(pts,{radius:12,blur:16,maxZoom:10,minOpacity:.35}).addTo(ovMap);
+  const c=document.getElementById("ovMapCount");if(c)c.textContent=nf.format(pts.length);
+  setTimeout(()=>ovMap.invalidateSize(),30);
+}
+function updateExMap(sel){
+  const wrap=document.getElementById("exMapWrap");if(!wrap)return;
+  if(typeof L==="undefined"||!sel||sel.dim!=="district"){wrap.style.display="none";return;}
+  wrap.style.display="block";
+  if(!exMap){wrap.innerHTML='<div class="bd-card"><h3>Activity heatmap — '+esc(sel.value)+'</h3><div class="sdesc">Where this district\'s activity is located.</div><div class="ovmap" id="exmap"></div></div>';try{exMap=newMap("exmap");}catch(e){return;}}
+  else{const h=wrap.querySelector("h3");if(h)h.textContent="Activity heatmap — "+sel.value;}
+  const pts=heatPoints(exActivities(sel));
+  if(exHeat){exMap.removeLayer(exHeat);exHeat=null;}
+  if(pts.length){exHeat=L.heatLayer(pts,{radius:16,blur:20,maxZoom:11,minOpacity:.4}).addTo(exMap);
+    const lats=pts.map(p=>p[0]),lons=pts.map(p=>p[1]);
+    try{exMap.fitBounds([[Math.min.apply(null,lats),Math.min.apply(null,lons)],[Math.max.apply(null,lats),Math.max.apply(null,lons)]],{maxZoom:9,padding:[24,24]});}catch(e){}
+  }
+  setTimeout(()=>exMap.invalidateSize(),30);
+}
 
 // ================= EXPLORE (dropdown summary) =================
 function computeGlobalStats(){
@@ -675,11 +801,12 @@ function exSalesSection(sel){
 function renderExplore(){
   const body=document.getElementById("exBody");if(!body)return;
   const hasSel=exDim==="date"?(exFrom&&exTo):!!exValue;
-  if(!hasSel){const what={district:"a district",product:"a product",type:"an activity type",date:"a start and end date"}[exDim];body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';return;}
+  if(!hasSel){const what={district:"a district",product:"a product",type:"an activity type",date:"a start and end date"}[exDim];body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';updateExMap(null);return;}
   const sel={dim:exDim,value:exValue,from:exFrom,to:exTo};
   const dimLabel={district:"District",product:"Product",type:"Activity Type",date:"Date Range"}[exDim];
   const valLabel=exDim==="date"?(fmtNiceDate(exFrom)+" → "+fmtNiceDate(exTo)):exValue;
   body.innerHTML='<div class="banner">Showing everything connected to <b>'+esc(dimLabel)+': '+esc(valLabel)+'</b></div><div class="insight"><span class="ico">💡</span><span>'+exInsight(sel)+'</span></div>'+exActSection(sel)+exSalesSection(sel);
+  updateExMap(sel);
 }
 
 // ================= CHANNEL EFFICIENCY =================
@@ -967,6 +1094,8 @@ function switchTab(name){
   document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.getAttribute("data-tab")===name));
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById("page-"+name).classList.add("active");currentTab=name;
+  if(name==="overview"&&ovMap)setTimeout(()=>ovMap.invalidateSize(),30);
+  if(name==="explore"&&exMap)setTimeout(()=>exMap.invalidateSize(),30);
 }
 function wireTabs(){document.querySelectorAll("[data-tab]").forEach(t=>t.addEventListener("click",()=>switchTab(t.getAttribute("data-tab"))));}
 function wireModals(){
@@ -978,6 +1107,7 @@ function wireModals(){
   document.getElementById("uploadBtn").addEventListener("click",openUpload);
   document.getElementById("uploadClose").addEventListener("click",closeUpload);
   document.getElementById("uploadOverlay").addEventListener("click",e=>{if(e.target.id==="uploadOverlay")closeUpload();});
+  document.getElementById("ovSubtabs").addEventListener("click",e=>{const s=e.target.closest(".subtab");if(!s)return;ovSub=s.getAttribute("data-sub");document.querySelectorAll("#ovSubtabs .subtab").forEach(x=>x.classList.toggle("active",x===s));renderOvSub();});
   document.getElementById("recentBtn").addEventListener("click",()=>document.getElementById("recentOverlay").classList.add("open"));
   document.getElementById("recentClose").addEventListener("click",()=>document.getElementById("recentOverlay").classList.remove("open"));
   document.getElementById("recentOverlay").addEventListener("click",e=>{if(e.target.id==="recentOverlay")e.currentTarget.classList.remove("open");});
