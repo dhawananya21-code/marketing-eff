@@ -126,6 +126,21 @@
   .hbar .fill{height:100%;border-radius:6px}
   .hbar .num{font-size:13px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
   .ov-note{color:var(--muted);font-size:12px;margin:2px 2px 16px}
+  /* explore */
+  .sum-controls{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:18px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+  .sum-controls .field{min-width:220px}
+  .sum-controls select{width:100%;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:6px 10px;font:inherit}
+  .sum-controls select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);outline:none}
+  .sum-lead{font-size:13px;color:var(--muted);width:100%;margin-bottom:2px}
+  .insight{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:18px;font-size:14px;line-height:1.5}
+  .insight .ico{font-size:16px}
+  .sum-section .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .sum-section .tile{background:var(--bg)}
+  .subhead{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 8px}
+  .sdot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:8px}
+  .sdot.act{background:var(--brand)}.sdot.sal{background:var(--warn)}
+  .bd2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:700px){.bd2{grid-template-columns:1fr}}
 
   /* channel efficiency */
   .eff-table{width:100%;border-collapse:collapse;font-size:13px}
@@ -230,8 +245,9 @@
   </div>
   <div class="tabs">
     <div class="tab active" data-tab="overview">Overview</div>
-    <div class="tab" data-tab="activities">Activities</div>
+    <div class="tab" data-tab="explore">Explore</div>
     <div class="tab" data-tab="efficiency">Channel Efficiency</div>
+    <div class="detail-nav"><span>View detailed records:</span><span class="tablink" data-tab="activities">Activities</span></div>
   </div>
 </header>
 
@@ -247,7 +263,19 @@
     <div class="ov-note" id="ovNote"></div>
   </div>
 
-  <!-- ACTIVITIES (merged) -->
+  <!-- EXPLORE (dropdown summary) -->
+  <div class="page" id="page-explore">
+    <div class="sum-controls">
+      <div class="sum-lead">Pick one thing to explore, and see everything connected to it summarized below.</div>
+      <div class="field"><label>Explore by</label>
+        <select id="exDim"><option value="district">District</option><option value="product">Product</option><option value="type">Activity Type</option><option value="date">Date Range</option></select>
+      </div>
+      <div class="field" id="exValueWrap"></div>
+    </div>
+    <div id="exBody"></div>
+  </div>
+
+  <!-- ACTIVITIES (merged, detailed records) -->
   <div class="page" id="page-activities">
     <div class="kpis" id="actKpis"></div>
     <div class="filters">
@@ -339,6 +367,8 @@ let dbConfigured=false;
 let DATE_MIN="",DATE_MAX="";
 let actSel={},actFrom="",actTo="",actPage=0,actFiltered=[];
 let ovFilters={};
+let exDim="district",exValue="",exFrom="",exTo="";
+let GLOBAL={statusable:0,completed:0,compRate:0,byRegion:new Map(),byProduct:new Map()};
 let currentTab="overview";
 
 // ---- load ----
@@ -399,8 +429,9 @@ function boot(){
   let mn="9999",mx="0000";for(const u of UROWS){const d=u[UF.date];if(d){if(d<mn)mn=d;if(d>mx)mx=d;}}
   DATE_MIN=mn.length===10?mn:"2000-01-01";DATE_MAX=mx.length===10?mx:"2100-01-01";
   refreshDatalists();
-  buildActFilters();
-  applyAct();renderOverview();renderEfficiency();updateRecent();
+  buildActFilters();buildExploreControls();
+  computeGlobalStats();
+  applyAct();renderOverview();renderExplore();renderEfficiency();updateRecent();
   wireTabs();wireModals();
 }
 function updateSubtitle(){
@@ -559,16 +590,120 @@ function overviewToActivities(){
 }
 function countBy(rows,ci){const m=new Map();for(const u of rows){const v=u[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
 
+// ================= EXPLORE (dropdown summary) =================
+function computeGlobalStats(){
+  const g={statusable:0,completed:0,byRegion:new Map(),byProduct:new Map()};
+  for(const u of UROWS){const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){g.statusable++;if(st==="Completed")g.completed++;}const reg=u[UF.region];if(reg)g.byRegion.set(reg,(g.byRegion.get(reg)||0)+1);const p=u[UF.product];if(p)g.byProduct.set(p,(g.byProduct.get(p)||0)+1);}
+  g.compRate=g.statusable?g.completed/g.statusable:0;GLOBAL=g;
+}
+function ordinal(n){const v=n%100,s=["th","st","nd","rd"];return n+(s[(v-20)%10]||s[v]||s[0]);}
+function rankOf(map,value){const mine=map.get(value)||0;let rank=1;for(const [,c] of map)if(c>mine)rank++;return {rank,total:map.size,count:mine};}
+function monthInRange(month,from,to){const f=from?from.slice(0,7):"",t=to?to.slice(0,7):"";if(f&&month<f)return false;if(t&&month>t)return false;return true;}
+function fmtNiceDate(s){if(!s)return "";const d=new Date(s+"T00:00:00");if(isNaN(d))return s;return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
+function tileS(n,l,sub){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div>'+(sub?'<div style="font-size:12px;margin-top:6px;color:var(--muted);font-weight:600">'+esc(sub)+'</div>':"")+'</div>';}
+function hbarsList(counts,limit,colorFn){
+  const list=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]).slice(0,limit||6);
+  if(!list.length)return '<div class="sum-empty">No data.</div>';
+  const max=list[0][1]||1;
+  return list.map(([k,v])=>{const w=Math.max(4,Math.round(v/max*100)),col=colorFn?colorFn(k):"var(--brand)";return '<div class="hbar"><div class="lbl">'+esc(k)+'</div><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><div class="num">'+nf.format(v)+'</div></div>';}).join("");
+}
+function buildExploreControls(){
+  const sel=document.getElementById("exDim");sel.value=exDim;
+  sel.addEventListener("change",()=>{exDim=sel.value;exValue="";exFrom="";exTo="";rebuildExValue();renderExplore();});
+  rebuildExValue();
+}
+function rebuildExValue(){
+  const wrap=document.getElementById("exValueWrap");wrap.innerHTML="";
+  if(exDim==="date"){
+    wrap.innerHTML='<label>Date range</label><div class="daterow"><div><div class="sub">From</div><input type="date" id="exFrom" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div><div><div class="sub">To</div><input type="date" id="exTo" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div></div>';
+    const a=wrap.querySelector("#exFrom"),b=wrap.querySelector("#exTo");a.value=exFrom;b.value=exTo;
+    a.addEventListener("change",e=>{exFrom=e.target.value;renderExplore();});b.addEventListener("change",e=>{exTo=e.target.value;renderExplore();});return;
+  }
+  const label={district:"District",product:"Product",type:"Activity Type"}[exDim];
+  const lab=document.createElement("label");lab.textContent=label;wrap.appendChild(lab);
+  const dd=makeDropdown({label,getCounts:q=>exValueCounts(exDim,q),onChange:v=>{exValue=v;renderExplore();}});
+  wrap.appendChild(dd.el);
+}
+function exValueCounts(dim,q){
+  const m=new Map();
+  if(dim==="type")["Digital","OOH","Field"].forEach(v=>{if(!q||v.toLowerCase().includes(q))m.set(v,0);});
+  const ci=dim==="product"?UF.product:dim==="type"?UF.type:UF.region;
+  for(const u of UROWS){const v=u[ci];if(!v)continue;if(q&&!String(v).toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
+  return m;
+}
+function exActivities(sel){return UROWS.filter(u=>{if(sel.dim==="district")return u[UF.region]===sel.value;if(sel.dim==="product")return u[UF.product]===sel.value;if(sel.dim==="type")return u[UF.type]===sel.value;const d=u[UF.date];return d&&(!sel.from||d>=sel.from)&&(!sel.to||d<=sel.to);});}
+function exSales(sel){if(sel.dim==="product"||sel.dim==="type")return null;return manual.sales.filter(e=>{if(sel.dim==="district")return e.district===sel.value;return e.month&&monthInRange(e.month,sel.from,sel.to);});}
+function exInsight(sel){
+  const rows=exActivities(sel),sales=exSales(sel),parts=[];
+  const subject=sel.dim==="date"?"This date range":esc(sel.value);
+  if(!rows.length)parts.push("No activities found for "+(sel.dim==="date"?"this date range":subject)+".");
+  else{
+    let completed=0,statusable=0;for(const u of rows){const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){statusable++;if(st==="Completed")completed++;}}
+    const rate=statusable?Math.round(completed/statusable*100):null,g=Math.round(GLOBAL.compRate*100);
+    let rankTxt="";if(sel.dim==="district"||sel.dim==="product"){const ri=rankOf(sel.dim==="district"?GLOBAL.byRegion:GLOBAL.byProduct,sel.value);rankTxt=" ("+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products")+" by volume)";}
+    let s=subject+" had "+nf.format(rows.length)+" activit"+(rows.length===1?"y":"ies")+rankTxt;
+    if(rate!=null){const diff=rate-g;s+=", with a completion rate of "+rate+"% — "+(Math.abs(diff)<2?"about the "+g+"% average":(diff>0?"above the "+g+"% average":"below the "+g+"% average"));}
+    parts.push(s+".");
+  }
+  if(sales===null)parts.push("Sales and cost are tracked by district and month, not by "+(sel.dim==="type"?"activity type":sel.dim)+".");
+  else if(!sales.length)parts.push("No sales data has been added for "+(sel.dim==="date"?"this range":"this district")+" yet.");
+  else parts.push("Sales and marketing-cost figures are shown below too.");
+  return parts.join(" ");
+}
+function exActSection(sel){
+  const rows=exActivities(sel);let inner;
+  if(!rows.length)inner='<div class="sum-empty">No activities found for this selection.</div>';
+  else{
+    let completed=0,statusable=0,reach=0,cost=0;for(const u of rows){const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){statusable++;if(st==="Completed")completed++;}reach+=num(u[UF.reach]);cost+=num(u[UF.cost]);}
+    const rate=statusable?Math.round(completed/statusable*100)+"%":"–",g=Math.round(GLOBAL.compRate*100);
+    let totalSub="";if(sel.dim==="district"||sel.dim==="product"){const ri=rankOf(sel.dim==="district"?GLOBAL.byRegion:GLOBAL.byProduct,sel.value);totalSub="ranks "+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products");}
+    const t='<div class="tiles">'+tileS(nf.format(rows.length),"Total activities",totalSub)+tileS(rate,"Completion rate",statusable?"overall avg "+g+"%":"")+tileS(nf.format(reach),"Farmer reach","")+tileS("₹"+nf.format(cost),"Total cost","")+'</div>';
+    const b1=hbarsList(countBy(rows,UF.name),6);
+    let b2t,b2;if(sel.dim==="district"){b2t="Top products";b2=hbarsList(countBy(rows,UF.product),6);}else{b2t="Top regions / districts";b2=hbarsList(countBy(rows,UF.region),6);}
+    inner=t+'<div class="bd2"><div><div class="subhead">Top activities</div>'+b1+'</div><div><div class="subhead">'+b2t+'</div>'+b2+'</div></div>';
+  }
+  return '<div class="sum-section"><h3><span class="sdot act"></span>Activities summary</h3><div class="sdesc">Activities connected to your selection.</div>'+inner+'</div>';
+}
+function exSalesSection(sel){
+  const sales=exSales(sel);let inner;
+  if(sales===null)inner='<div class="sum-empty">Sales and cost are tracked by district and month — not by '+esc(sel.dim==="type"?"activity type":sel.dim)+'.</div>';
+  else if(!sales.length)inner='<div class="sum-empty">No sales data yet.</div>';
+  else{let val=0,units=0,mc=0;for(const e of sales){val+=num(e.salesValue);units+=num(e.unitsSold);mc+=num(e.marketingCost);}const spr=mc>0?"₹"+(val/mc).toFixed(2):"–";
+    inner='<div class="tiles">'+tileS("₹"+nf.format(val),"Total sales value","")+tileS(nf.format(units),"Total units","")+tileS("₹"+nf.format(mc),"Marketing cost","")+tileS(spr,"Sales per ₹1 spent","")+'</div>';}
+  return '<div class="sum-section"><h3><span class="sdot sal"></span>Sales summary</h3><div class="sdesc">Sales connected to your selection (district + month totals).</div>'+inner+'</div>';
+}
+function renderExplore(){
+  const body=document.getElementById("exBody");if(!body)return;
+  const hasSel=exDim==="date"?(exFrom&&exTo):!!exValue;
+  if(!hasSel){const what={district:"a district",product:"a product",type:"an activity type",date:"a start and end date"}[exDim];body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';return;}
+  const sel={dim:exDim,value:exValue,from:exFrom,to:exTo};
+  const dimLabel={district:"District",product:"Product",type:"Activity Type",date:"Date Range"}[exDim];
+  const valLabel=exDim==="date"?(fmtNiceDate(exFrom)+" → "+fmtNiceDate(exTo)):exValue;
+  body.innerHTML='<div class="banner">Showing everything connected to <b>'+esc(dimLabel)+': '+esc(valLabel)+'</b></div><div class="insight"><span class="ico">💡</span><span>'+exInsight(sel)+'</span></div>'+exActSection(sel)+exSalesSection(sel);
+}
+
 // ================= CHANNEL EFFICIENCY =================
 const EFF_MIN_COMBOS=5;
 function computeEfficiency(){
-  const salesDM=new Map();
-  for(const e of manual.sales){const v=num(e.salesValue);if(!e.district||!e.month||v<=0)continue;const k=e.district+"|"+e.month;salesDM.set(k,(salesDM.get(k)||0)+v);}
-  const costCDM=new Map();
-  for(const u of UROWS){const c=num(u[UF.cost]);if(c<=0)continue;const name=u[UF.name],reg=u[UF.region],d=u[UF.date];if(!name||!reg||!d)continue;const month=d.slice(0,7);const k=name+"|"+reg+"|"+month;costCDM.set(k,(costCDM.get(k)||0)+c);}
-  const combos=new Map();
-  for(const [k,cost] of costCDM){const i1=k.indexOf("|"),i2=k.indexOf("|",i1+1);const ch=k.slice(0,i1),reg=k.slice(i1+1,i2),month=k.slice(i2+1);const sales=salesDM.get(reg+"|"+month);if(sales==null)continue;const ck=ch+"|"+reg;const o=combos.get(ck)||{channel:ch,district:reg,cost:0,sales:0};o.cost+=cost;o.sales+=sales;combos.set(ck,o);}
-  const list=[...combos.values()].filter(o=>o.cost>0&&o.sales>0).map(o=>({...o,spr:o.sales/o.cost}));
+  // District + month: sales value, and the district-total Marketing Cost entered directly on sales entries.
+  const salesDM=new Map(), directCostDM=new Map();
+  for(const e of manual.sales){
+    if(!e.district||!e.month)continue;const k=e.district+"|"+e.month;
+    const sv=num(e.salesValue);if(sv>0)salesDM.set(k,(salesDM.get(k)||0)+sv);
+    const mc=num(e.marketingCost);if(mc>0)directCostDM.set(k,(directCostDM.get(k)||0)+mc);
+  }
+  // Fallback cost: sum of individual activity costs by district + month.
+  const actCostDM=new Map();
+  for(const u of UROWS){const c=num(u[UF.cost]);if(c<=0)continue;const reg=u[UF.region],d=u[UF.date];if(!reg||!d)continue;const k=reg+"|"+d.slice(0,7);actCostDM.set(k,(actCostDM.get(k)||0)+c);}
+  // Aggregate per district over months that have BOTH sales and a cost (direct total preferred).
+  const perDist=new Map();
+  for(const [k,sales] of salesDM){
+    const bar=k.indexOf("|");const dist=k.slice(0,bar);
+    const cost = directCostDM.has(k)?directCostDM.get(k):(actCostDM.get(k)||0);
+    if(cost<=0)continue;
+    const o=perDist.get(dist)||{district:dist,cost:0,sales:0};o.cost+=cost;o.sales+=sales;perDist.set(dist,o);
+  }
+  const list=[...perDist.values()].filter(o=>o.cost>0&&o.sales>0).map(o=>({...o,spr:o.sales/o.cost}));
   const count=list.length,avg=count?list.reduce((s,o)=>s+o.spr,0)/count:0;
   list.forEach(o=>{o.index=avg?Math.round(o.spr/avg*100):100;});list.sort((a,b)=>b.spr-a.spr);
   return {list,count,avg};
@@ -576,27 +711,27 @@ function computeEfficiency(){
 function renderEfficiency(){
   const host=document.getElementById("effBody");if(!host)return;
   const {list,count,avg}=computeEfficiency();
-  const status='<div class="banner">This matches activity <b>cost</b> with <b>Sales value</b> for the same region and month. It needs at least <b>'+EFF_MIN_COMBOS+'</b> activity + region combinations with both. Currently: <b>'+count+' of '+EFF_MIN_COMBOS+'</b>.</div>';
+  const status='<div class="banner">This matches each district\'s <b>Sales value</b> with its <b>Marketing Cost</b> for the same month (using the district-total cost you enter, or summed activity costs if no total exists). It needs at least <b>'+EFF_MIN_COMBOS+'</b> districts with both. Currently: <b>'+count+' of '+EFF_MIN_COMBOS+'</b>.</div>';
   if(count<EFF_MIN_COMBOS){
-    host.innerHTML=status+'<div class="sum-section"><h3>Spend vs Sales analysis</h3><div style="margin:-4px 0 12px;color:var(--muted);font-size:13px">What each one means: Sales per Rupee Spent'+infoIcon("eff_spr")+' · Channel Efficiency Index'+infoIcon("eff_index")+' · Opportunity Matrix'+infoIcon("eff_matrix")+'</div><div class="sum-empty" style="padding:40px">Not enough data yet.<br><br>These turn on automatically once at least '+EFF_MIN_COMBOS+' activity + region combinations have both cost and sales in the same month.<br><br><b>'+count+' of '+EFF_MIN_COMBOS+'</b> available so far.</div></div>';return;
+    host.innerHTML=status+'<div class="sum-section"><h3>Spend vs Sales analysis</h3><div style="margin:-4px 0 12px;color:var(--muted);font-size:13px">What each one means: Sales per Rupee Spent'+infoIcon("eff_spr")+' · Channel Efficiency Index'+infoIcon("eff_index")+' · Opportunity Matrix'+infoIcon("eff_matrix")+'</div><div class="sum-empty" style="padding:40px">Not enough data yet.<br><br>These turn on automatically once at least '+EFF_MIN_COMBOS+' districts have both sales and marketing cost in the same month.<br><br><b>'+count+' of '+EFF_MIN_COMBOS+'</b> available so far.</div></div>';return;
   }
-  const rows=list.map((o,i)=>{const cls=o.index>=100?"up":"down",arw=o.index>=100?"▲":"▼";return '<tr><td>'+(i+1)+'</td><td>'+esc(o.channel)+' — '+esc(o.district)+'</td><td class="num">₹'+o.spr.toFixed(2)+'</td><td class="num idx '+cls+'">'+arw+' '+o.index+'</td><td class="num">₹'+nf.format(Math.round(o.sales))+'</td></tr>';}).join("");
-  const listCard='<div class="sum-section"><h3>Sales per rupee spent &amp; efficiency</h3><div class="sdesc">Sales value ÷ activity cost per activity + region (matched by month). Efficiency: 100 = the ₹'+avg.toFixed(2)+' average, above is better.</div><div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>Activity — Region</th><th>Sales per ₹1'+infoIcon("eff_spr")+'</th><th>Efficiency'+infoIcon("eff_index")+'</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  const rows=list.map((o,i)=>{const cls=o.index>=100?"up":"down",arw=o.index>=100?"▲":"▼";return '<tr><td>'+(i+1)+'</td><td>'+esc(o.district)+'</td><td class="num">₹'+o.spr.toFixed(2)+'</td><td class="num idx '+cls+'">'+arw+' '+o.index+'</td><td class="num">₹'+nf.format(Math.round(o.sales))+'</td></tr>';}).join("");
+  const listCard='<div class="sum-section"><h3>Sales per rupee spent &amp; efficiency</h3><div class="sdesc">Sales value ÷ marketing cost per district (matched by month). Efficiency: 100 = the ₹'+avg.toFixed(2)+' average, above is better.</div><div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>District</th><th>Sales per ₹1'+infoIcon("eff_spr")+'</th><th>Efficiency'+infoIcon("eff_index")+'</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
   const salesArr=list.map(o=>o.sales).sort((a,b)=>a-b),m=salesArr.length,median=m%2?salesArr[(m-1)/2]:(salesArr[m/2-1]+salesArr[m/2])/2;
   const g={scale:[],invest:[],optimise:[],reduce:[]};
   list.forEach(o=>{const he=o.index>=100,hs=o.sales>=median;g[he?(hs?"scale":"invest"):(hs?"optimise":"reduce")].push(o);});
   const boxes=[{k:"scale",t:"Scale",r:"High efficiency · High sales",d:"Working well and big — do more."},{k:"invest",t:"Invest",r:"High efficiency · Low sales",d:"Efficient but small — worth growing."},{k:"optimise",t:"Optimise",r:"Low efficiency · High sales",d:"Big but wasteful — tighten spend."},{k:"reduce",t:"Reduce",r:"Low efficiency · Low sales",d:"Weak on both — consider cutting."}];
-  const matrix='<div class="sum-section"><h3>Opportunity matrix'+infoIcon("eff_matrix")+'</h3><div class="sdesc">Each activity + region placed by efficiency (vs 100) and total sales (vs the middle value).</div><div class="matrix">'+boxes.map(b=>'<div class="mbox '+b.k+'"><h4>'+b.t+'</h4><div class="mrule">'+b.r+'</div><div class="mdesc">'+b.d+'</div>'+(g[b.k].length?g[b.k].map(o=>'<span class="chip2">'+esc(o.channel)+' — '+esc(o.district)+'</span>').join(""):'<span class="empty-mini">None</span>')+'</div>').join("")+'</div></div>';
+  const matrix='<div class="sum-section"><h3>Opportunity matrix'+infoIcon("eff_matrix")+'</h3><div class="sdesc">Each district placed by efficiency (vs 100) and total sales (vs the middle value).</div><div class="matrix">'+boxes.map(b=>'<div class="mbox '+b.k+'"><h4>'+b.t+'</h4><div class="mrule">'+b.r+'</div><div class="mdesc">'+b.d+'</div>'+(g[b.k].length?g[b.k].map(o=>'<span class="chip2">'+esc(o.district)+'</span>').join(""):'<span class="empty-mini">None</span>')+'</div>').join("")+'</div></div>';
   host.innerHTML=status+listCard+matrix;
 }
 
 // ================= INFO POPOVERS =================
-function effStatus(){const {count}=computeEfficiency();return count>=EFF_MIN_COMBOS?"Showing real numbers — "+count+" combinations qualify.":"Waiting on data — needs cost and sales in the same region + month for at least "+EFF_MIN_COMBOS+" combinations (currently "+count+" of "+EFF_MIN_COMBOS+").";}
+function effStatus(){const {count}=computeEfficiency();return count>=EFF_MIN_COMBOS?"Showing real numbers — "+count+" districts qualify.":"Waiting on data — needs both sales and marketing cost in the same district + month for at least "+EFF_MIN_COMBOS+" districts (currently "+count+" of "+EFF_MIN_COMBOS+").";}
 const INFO={
   completion:{title:"Completion rate",what:"Of the activities that have a status (Completed / Expired / Rejected), how many were Completed.",formula:"Completed ÷ activities with a status × 100.",status:()=>"Real numbers from field-activity records. New channel-style entries have no status, so they aren't counted here."},
-  eff_spr:{title:"Sales per Rupee Spent",what:"For an activity run in a region, how much sales value is linked to each ₹1 of cost.",formula:"Sales value ÷ activity cost, matched by the same region and month.",status:effStatus},
-  eff_index:{title:"Channel Efficiency Index",what:"A score comparing each activity + region to the average. 100 = average, above is better.",formula:"Its sales-per-rupee ÷ the average sales-per-rupee × 100.",status:effStatus},
-  eff_matrix:{title:"Opportunity Matrix",what:"Sorts each activity + region into four action groups by efficiency and total sales.",formula:"Efficiency vs 100 and total sales vs the middle value (median) → Scale / Invest / Optimise / Reduce.",status:effStatus},
+  eff_spr:{title:"Sales per Rupee Spent",what:"For a district, how much sales value is linked to each ₹1 of marketing cost.",formula:"District sales value ÷ district marketing cost, matched by month. Uses the district-total Marketing Cost you enter; if none exists it falls back to summing that district's activity costs.",status:effStatus},
+  eff_index:{title:"Channel Efficiency Index",what:"A score comparing each district to the average. 100 = average, above is better.",formula:"Its sales-per-rupee ÷ the average sales-per-rupee × 100.",status:effStatus},
+  eff_matrix:{title:"Opportunity Matrix",what:"Sorts each district into four action groups by efficiency and total sales.",formula:"Efficiency vs 100 and total sales vs the middle value (median) → Scale / Invest / Optimise / Reduce.",status:effStatus},
 };
 function infoIcon(k){return '<span class="info-i" data-info="'+k+'" role="button" tabindex="0" aria-label="What this means" title="What this means">i</span>';}
 let infoPop=null;
@@ -626,13 +761,13 @@ const ACT_EXTRA=[
   {k:"category",label:"Product Category",type:"select",opts:()=>distinctU(UF.category)},
 ];
 const SALES_FORM=[
-  {k:"district",label:"District",type:"text",list:"dl-districts",required:true},
   {k:"month",label:"Month",type:"month",required:true},
-  {k:"product",label:"Product",type:"text",list:"dl-products",required:true},
+  {k:"district",label:"District",type:"text",list:"dl-districts",required:true},
+  {k:"marketingCost",label:"Marketing Cost (₹) — total for this district & month",type:"number",required:true},
   {k:"salesValue",label:"Sales Value (₹)",type:"number",required:true},
   {k:"unitsSold",label:"Units Sold",type:"number",required:true},
 ];
-const NUMERIC=new Set(["reach","cost","salesValue","unitsSold"]);
+const NUMERIC=new Set(["reach","cost","salesValue","unitsSold","marketingCost"]);
 let currentForm=null;
 function openAdd(){document.getElementById("addOverlay").classList.add("open");showChooser();}
 function closeAdd(){document.getElementById("addOverlay").classList.remove("open");}
@@ -679,7 +814,7 @@ async function submitForm(){
   }catch(e){setFormMsg("Network error: "+e.message,"err");}
   btn.disabled=false;
 }
-function refreshAll(){updateSubtitle();refreshDatalists();updateRecent();applyAct();renderOverview();renderEfficiency();}
+function refreshAll(){updateSubtitle();refreshDatalists();updateRecent();computeGlobalStats();applyAct();renderOverview();renderExplore();renderEfficiency();}
 
 // ================= RECENT =================
 function updateRecent(){
@@ -690,7 +825,7 @@ function updateRecent(){
   if(!all.length){list.innerHTML='<div class="empty" style="padding:24px">Nothing added yet.</div>';return;}
   list.innerHTML=all.slice(0,60).map(e=>{
     let summary="",meta="";
-    if(e._t==="sales"){summary=(e.product||"Product")+" — "+(e.district||"");meta=[e.month,e.salesValue!=null?"₹"+nf.format(num(e.salesValue)):"",e.unitsSold!=null?nf.format(num(e.unitsSold))+" units":""].filter(Boolean).join(" · ");}
+    if(e._t==="sales"){summary=(e.district||"District")+" — "+(e.month||"");meta=[e.salesValue!=null?"₹"+nf.format(num(e.salesValue))+" sales":"",e.unitsSold!=null?nf.format(num(e.unitsSold))+" units":"",e.marketingCost!=null&&e.marketingCost!==""?"₹"+nf.format(num(e.marketingCost))+" cost":""].filter(Boolean).join(" · ");}
     else{const name=e.activityName||e.activity||e.channelType||"Activity";const reg=e.region||e.district||"";const t=e.typeOfActivity||(e.channelType?channelToType(e.channelType):"Field");summary=name+" — "+reg;meta=[t,e.date||e.plannedDate||(e.month||""),e.cost!=null&&e.cost!==""?"₹"+nf.format(num(e.cost)):""].filter(Boolean).join(" · ");}
     return '<div class="recent-item"><span class="rtag '+e._t+'">'+e._t+'</span><div class="rmain"><div class="rsummary">'+esc(summary)+'</div><div class="rmeta">'+esc(meta)+' · added '+esc(fmtDateTime(e.created_at))+'</div></div></div>';
   }).join("");
@@ -716,9 +851,9 @@ const MAP_FIELDS={
     {k:"category",label:"Product Category",aliases:["Product Category","Category"]},
   ],
   sales:[
-    {k:"district",label:"District",required:true,aliases:["District","Region","Zila"]},
     {k:"month",label:"Month",required:true,kind:"month",aliases:["Month","Date","Period"]},
-    {k:"product",label:"Product",required:true,aliases:["Product","Item"]},
+    {k:"district",label:"District",required:true,aliases:["District","Region","Zila"]},
+    {k:"marketingCost",label:"Marketing Cost",required:true,kind:"number",aliases:["Marketing Cost","Marketing Spend","Cost","Spend","Total Cost"]},
     {k:"salesValue",label:"Sales Value",required:true,kind:"number",aliases:["Sales Value","Sales","Revenue","Value"]},
     {k:"unitsSold",label:"Units Sold",required:true,kind:"number",aliases:["Units Sold","Units","Quantity","Qty"]},
   ],
