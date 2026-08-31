@@ -10,47 +10,38 @@
     --line:#e3e8ef; --brand:#2f6df6; --brand-soft:#eaf1ff;
     --chip:#eef1f6; --good:#1f9d63; --warn:#c9820b; --bad:#d0492f;
     --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.10);
-    --radius:12px;
-    --chart-surface:#fcfcfb; --chart-blue:#2a78d6; --chart-aqua:#1baf7a;
-    --chart-grid:#e7ebf1; --chart-axis:#9aa6b6;
+    --radius:12px; --digital:#2a78d6; --ooh:#eb6834; --field:#1baf7a;
   }
   @media (prefers-color-scheme:dark){
     :root{
       --bg:#0f141b; --panel:#161d27; --ink:#e8edf4; --muted:#95a2b5;
       --line:#26303d; --brand:#5b8dff; --brand-soft:#1a2536;
       --chip:#1e2833; --good:#3fca86; --warn:#e0a53a; --bad:#f0765a;
-      --shadow:0 1px 2px rgba(0,0,0,.3);
-      --chart-surface:#1a1a19; --chart-blue:#3987e5; --chart-aqua:#199e70;
-      --chart-grid:#2a3542; --chart-axis:#6b7a8d;
+      --shadow:0 1px 2px rgba(0,0,0,.3); --digital:#3987e5; --ooh:#d95926; --field:#199e70;
     }
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{
-    background:var(--bg); color:var(--ink);
-    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
+  body{background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
   header.top{padding:18px 24px 0;border-bottom:1px solid var(--line);background:var(--panel)}
   .top-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
   header.top h1{margin:0;font-size:20px;letter-spacing:-.01em}
   header.top p{margin:4px 0 0;color:var(--muted);font-size:13px}
   .top-actions{display:flex;gap:10px;flex-wrap:wrap}
-  /* tabs */
-  .tabs{display:flex;gap:4px;margin-top:16px}
-  .tab{padding:10px 18px;border:1px solid transparent;border-bottom:none;border-radius:10px 10px 0 0;
-    cursor:pointer;font-weight:600;color:var(--muted);background:transparent}
+  .tabs{display:flex;gap:4px;margin-top:16px;align-items:flex-end}
+  .tab{padding:10px 18px;border:1px solid transparent;border-bottom:none;border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;color:var(--muted);background:transparent}
   .tab:hover{color:var(--ink)}
   .tab.active{color:var(--brand);background:var(--bg);border-color:var(--line);position:relative;top:1px}
-
+  .detail-nav{display:flex;align-items:center;gap:10px;margin-left:auto;padding-bottom:10px;font-size:13px;color:var(--muted)}
+  .detail-nav .tablink{cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:7px;font-weight:600}
+  .detail-nav .tablink:hover,.detail-nav .tablink.active{color:var(--brand);background:var(--brand-soft)}
   .wrap{max-width:1400px;margin:0 auto;padding:20px 24px 80px}
-  .page{display:none}
-  .page.active{display:block}
+  .page{display:none}.page.active{display:block}
 
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
-  .kpi .n{font-size:22px;font-weight:650;letter-spacing:-.02em}
-  .kpi .l{color:var(--muted);font-size:12px;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+  .kpi,.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+  .kpi .n,.tile .n{font-size:22px;font-weight:650;letter-spacing:-.02em}
+  .kpi .l,.tile .l{color:var(--muted);font-size:12px;margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
 
   .filters{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:18px}
   .filters-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
@@ -63,7 +54,7 @@
   .sd .box{display:flex;align-items:center;gap:6px;width:100%;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:6px 10px;cursor:pointer;user-select:none}
   .sd .box .val{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sd .box .val.placeholder{color:var(--muted)}
-  .sd .box .clear{color:var(--muted);font-size:16px;line-height:1;padding:0 2px;border-radius:4px}
+  .sd .box .clear{color:var(--muted);font-size:16px;line-height:1;padding:0 2px}
   .sd .box .clear:hover{color:var(--bad)}
   .sd .box .caret{color:var(--muted);font-size:10px}
   .sd.open .box{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
@@ -101,6 +92,10 @@
   .pill.Rejected{background:rgba(208,73,47,.14);color:var(--bad)}
   .pill.Yes{background:rgba(31,157,99,.14);color:var(--good)}
   .pill.No{background:var(--chip);color:var(--muted)}
+  .tpill{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600}
+  .tpill.Digital{background:rgba(42,120,214,.14);color:var(--digital)}
+  .tpill.OOH{background:rgba(235,104,52,.14);color:var(--ooh)}
+  .tpill.Field{background:rgba(27,175,122,.14);color:var(--field)}
   .badge-manual{display:inline-block;font-size:10px;font-weight:700;color:var(--brand);background:var(--brand-soft);border-radius:5px;padding:1px 6px;margin-right:6px;vertical-align:1px}
   .pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px}
   .pager button{min-width:36px}.pager .info{color:var(--muted);font-size:13px}
@@ -110,26 +105,69 @@
   .empty{padding:50px;text-align:center;color:var(--muted)}
   .hint{color:var(--muted);font-size:13px;padding:6px 2px}
 
-  /* charts */
-  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
-  @media(max-width:820px){.charts{grid-template-columns:1fr}}
-  .chartcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-  .chartcard h4{margin:0 0 2px;font-size:14px}
-  .chartcard .sub{color:var(--muted);font-size:12px;margin-bottom:10px}
-  .chart-empty{height:180px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:10px;background:var(--bg)}
-  svg.chart{width:100%;height:auto;display:block;background:var(--chart-surface);border-radius:8px}
-  .chart-note{color:var(--muted);font-size:12px;margin:16px 2px 0}
+  /* overview */
+  .ov-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .ov-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;min-height:10px}
+  .ov-chips .lead{color:var(--muted);font-size:13px}
+  .ov-chip{display:inline-flex;align-items:center;gap:7px;background:var(--brand-soft);color:var(--brand);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:13px;font-weight:600}
+  .ov-chip .k{color:var(--muted);font-weight:500}
+  .ov-chip .x{cursor:pointer;font-size:15px;line-height:1}
+  .ov-chip .x:hover{color:var(--bad)}
+  .breakdowns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:820px){.breakdowns{grid-template-columns:1fr}}
+  .bd-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .bd-card h3{margin:0 0 3px;font-size:14px}
+  .bd-card .sdesc{color:var(--muted);font-size:12px;margin-bottom:12px}
+  .hbar{display:grid;grid-template-columns:150px 1fr 54px;gap:10px;align-items:center;margin:7px 0}
+  .hbar .lbl{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hbar .lbl .ov-click{cursor:pointer;border-bottom:1px dashed transparent}
+  .hbar .lbl .ov-click:hover{color:var(--brand);border-bottom-color:var(--brand)}
+  .hbar .track{background:var(--chip);border-radius:6px;height:14px;overflow:hidden}
+  .hbar .fill{height:100%;border-radius:6px}
+  .hbar .num{font-size:13px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .ov-note{color:var(--muted);font-size:12px;margin:2px 2px 16px}
+
+  /* channel efficiency */
+  .eff-table{width:100%;border-collapse:collapse;font-size:13px}
+  .eff-table th{text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+  .eff-table td{padding:9px 12px;border-bottom:1px solid var(--line)}
+  .eff-table td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .idx{font-weight:700}.idx.up{color:var(--good)}.idx.down{color:var(--bad)}
+  .sum-section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+  .sum-section > h3{margin:0 0 2px;font-size:16px}
+  .sum-section > .sdesc{color:var(--muted);font-size:12px;margin-bottom:14px}
+  .sum-empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;background:var(--bg);font-size:13px}
+  .matrix{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.matrix{grid-template-columns:1fr}}
+  .mbox{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg)}
+  .mbox h4{margin:0 0 2px;font-size:15px}
+  .mbox .mrule{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .mbox .mdesc{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .mbox.scale{border-top:3px solid var(--good)}.mbox.invest{border-top:3px solid var(--brand)}
+  .mbox.optimise{border-top:3px solid var(--warn)}.mbox.reduce{border-top:3px solid var(--bad)}
+  .chip2{display:inline-block;background:var(--chip);border-radius:20px;padding:4px 11px;font-size:12px;margin:3px 4px 0 0}
+  .empty-mini{color:var(--muted);font-size:12px;font-style:italic}
+  .banner{background:var(--brand-soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink)}
+  .banner b{color:var(--brand)}
+
+  /* info popover */
+  .info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-size:10px;font-style:italic;font-family:Georgia,serif;font-weight:700;cursor:pointer;vertical-align:middle;line-height:1;user-select:none;margin-left:5px}
+  .info-i:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+  .info-pop{position:fixed;z-index:400;max-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink);text-transform:none;letter-spacing:normal;font-weight:400}
+  .info-pop .ip-title{font-weight:700;font-size:13px;margin-bottom:6px}
+  .info-pop .ip-row{margin-bottom:6px}
+  .info-pop .ip-status{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 
   /* modal */
   .overlay{position:fixed;inset:0;background:rgba(10,16,24,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:100;overflow-y:auto}
   .overlay.open{display:flex}
-  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:640px}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:660px}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
   .modal-head h3{margin:0;font-size:16px}
   .modal-head .x{cursor:pointer;color:var(--muted);font-size:22px;line-height:1}
   .modal-head .x:hover{color:var(--bad)}
   .modal-body{padding:20px}
-  .choose{display:grid;grid-template-columns:1fr;gap:12px}
+  .choose{display:grid;gap:12px}
   .choose button{text-align:left;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);cursor:pointer;font:inherit}
   .choose button:hover{border-color:var(--brand);background:var(--brand-soft)}
   .choose button b{display:block;font-size:15px;margin-bottom:3px}
@@ -137,106 +175,32 @@
   .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:560px){.formgrid{grid-template-columns:1fr}}
   .formgrid .full{grid-column:1/-1}
+  .form-divider{grid-column:1/-1;margin:6px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
   .fld label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
   .fld label .req{color:var(--bad)}
   .fld input,.fld select,.fld textarea{width:100%;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:8px 10px;font:inherit}
-  .fld textarea{min-height:70px;resize:vertical}
+  .fld textarea{min-height:64px;resize:vertical}
   .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);outline:none}
   .modal-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
-  .form-msg{font-size:13px}
-  .form-msg.err{color:var(--bad)}.form-msg.ok{color:var(--good)}
-
-  /* recent list */
+  .form-msg{font-size:13px}.form-msg.err{color:var(--bad)}.form-msg.ok{color:var(--good)}
   .recent-list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto}
   .recent-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
   .rtag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:6px;white-space:nowrap}
   .rtag.activity{background:rgba(47,109,246,.14);color:var(--brand)}
-  .rtag.marketing{background:rgba(27,175,122,.16);color:var(--good)}
   .rtag.sales{background:rgba(201,130,11,.16);color:var(--warn)}
   .recent-item .rmain{flex:1;min-width:0}
   .recent-item .rmain .rsummary{font-weight:600}
   .recent-item .rmain .rmeta{color:var(--muted);font-size:12px;margin-top:2px}
-
-  .cta{display:inline-flex;align-items:center;gap:6px}
   .count-badge{background:var(--brand);color:#fff;border-radius:20px;font-size:11px;font-weight:700;padding:1px 7px}
-
-  /* toast */
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:200}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .toast.err{background:var(--bad);color:#fff}
-
-  .banner{background:var(--brand-soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--ink)}
-  .banner b{color:var(--brand)}
-
-  /* detailed-records nav */
-  .tabs{align-items:flex-end}
-  .detail-nav{display:flex;align-items:center;gap:10px;margin-left:auto;padding-bottom:10px;font-size:13px;color:var(--muted)}
-  .detail-nav .tablink{cursor:pointer;color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:7px;font-weight:600}
-  .detail-nav .tablink:hover{color:var(--brand);background:var(--brand-soft)}
-  .detail-nav .tablink.active{color:var(--brand);background:var(--brand-soft)}
-
-  /* summary page */
-  .sum-controls{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:18px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
-  .sum-controls .field{min-width:220px}
-  .sum-controls select{width:100%;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:6px 10px;font:inherit}
-  .sum-controls select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);outline:none}
-  .sum-lead{font-size:13px;color:var(--muted);width:100%;margin-bottom:2px}
-  .sum-section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
-  .sum-section > h3{margin:0 0 2px;font-size:16px;display:flex;align-items:center;gap:8px}
-  .sum-section > .sdesc{color:var(--muted);font-size:12px;margin-bottom:14px}
-  .sdot{width:9px;height:9px;border-radius:50%;display:inline-block}
-  .sdot.act{background:var(--brand)}.sdot.mkt{background:var(--good)}.sdot.sal{background:var(--warn)}
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-  .tile{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
-  .tile .n{font-size:22px;font-weight:650;letter-spacing:-.02em}
-  .tile .l{color:var(--muted);font-size:12px;margin-top:2px}
-  .tile .sub{font-size:12px;margin-top:6px;color:var(--muted);font-weight:600}
-  .tile .sub .up{color:var(--good)}
-  .tile .sub .down{color:var(--bad)}
-  .insight{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:18px;font-size:14px;line-height:1.5}
-  .insight .ico{font-size:16px;line-height:1.4}
-  .subhead{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 8px}
-  .breakdowns{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-  @media(max-width:760px){.breakdowns{grid-template-columns:1fr}.sum-section .charts{grid-template-columns:1fr}}
-  .hbar{display:grid;grid-template-columns:130px 1fr 54px;gap:10px;align-items:center;margin:7px 0}
-  .hbar .lbl{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .hbar .track{background:var(--chip);border-radius:6px;height:14px;overflow:hidden}
-  .hbar .fill{height:100%;border-radius:6px}
-  .hbar .num{font-size:13px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-  .sum-empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;background:var(--bg);font-size:13px}
-  /* channel efficiency */
-  .eff-table{width:100%;border-collapse:collapse;font-size:13px}
-  .eff-table th{text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
-  .eff-table td{padding:9px 12px;border-bottom:1px solid var(--line)}
-  .eff-table td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .idx{font-weight:700}.idx.up{color:var(--good)}.idx.down{color:var(--bad)}
-  .matrix{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:640px){.matrix{grid-template-columns:1fr}}
-  .mbox{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--bg)}
-  .mbox h4{margin:0 0 2px;font-size:15px}
-  .mbox .mrule{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-  .mbox .mdesc{font-size:12px;color:var(--muted);margin-bottom:10px}
-  .mbox.scale{border-top:3px solid var(--good)}
-  .mbox.invest{border-top:3px solid var(--brand)}
-  .mbox.optimise{border-top:3px solid var(--warn)}
-  .mbox.reduce{border-top:3px solid var(--bad)}
-  .chip{display:inline-block;background:var(--chip);border-radius:20px;padding:4px 11px;font-size:12px;margin:3px 4px 0 0}
-  .empty-mini{color:var(--muted);font-size:12px;font-style:italic}
-  /* inline metric info */
-  .info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-size:10px;font-style:italic;font-family:Georgia,serif;font-weight:700;cursor:pointer;vertical-align:middle;line-height:1;user-select:none;margin-left:5px;flex:none}
-  .info-i:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
-  .info-pop{position:fixed;z-index:400;max-width:300px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--ink);font-weight:400;text-transform:none;letter-spacing:normal}
-  .info-pop .ip-title{font-weight:700;font-size:13px;margin-bottom:6px}
-  .info-pop .ip-row{margin-bottom:6px}
-  .info-pop .ip-status{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
-  /* CSV upload */
+  /* upload */
   .step-note{color:var(--muted);font-size:13px;margin:0 0 14px}
   .filebox{border:2px dashed var(--line);border-radius:12px;padding:26px;text-align:center;background:var(--bg)}
   .filebox input[type=file]{margin-top:10px}
   .map-grid{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;padding:2px}
   .map-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
-  .map-row .of{font-weight:600;font-size:13px}
-  .map-row .of .req{color:var(--bad)}
+  .map-row .of{font-weight:600;font-size:13px}.map-row .of .req{color:var(--bad)}
   .map-row .of small{display:block;color:var(--muted);font-weight:400;font-size:11px}
   .map-row select{width:100%;min-height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);padding:6px 8px;font:inherit}
   .map-row select.unmapped-req{border-color:var(--bad)}
@@ -250,19 +214,14 @@
   .progress-track{height:10px;background:var(--chip);border-radius:6px;overflow:hidden;margin:14px 0}
   .progress-fill{height:100%;background:var(--brand);width:0;transition:width .2s}
   .sum-stat{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0}
-  .sum-stat .b{font-size:26px;font-weight:700}
-  .sum-stat .b.skip{color:var(--warn)}
-  .skip-list{font-size:13px;color:var(--muted)}
-  .skip-list div{padding:3px 0}
+  .sum-stat .b{font-size:26px;font-weight:700}.sum-stat .b.skip{color:var(--warn)}
+  .skip-list{font-size:13px;color:var(--muted)}.skip-list div{padding:3px 0}
 </style>
 </head>
 <body>
 <header class="top">
   <div class="top-row">
-    <div>
-      <h1>Marketing Activity Dashboard</h1>
-      <p id="subtitle">Loading data…</p>
-    </div>
+    <div><h1>Marketing Activity Dashboard</h1><p id="subtitle">Loading data…</p></div>
     <div class="top-actions">
       <button class="btn" id="recentBtn">Recently added <span class="count-badge" id="recentCount">0</span></button>
       <button class="btn" id="uploadBtn">⬆ Upload CSV</button>
@@ -270,47 +229,30 @@
     </div>
   </div>
   <div class="tabs">
-    <div class="tab active" data-tab="summary">Summary</div>
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="activities">Activities</div>
     <div class="tab" data-tab="efficiency">Channel Efficiency</div>
-    <div class="detail-nav">
-      <span>View detailed records:</span>
-      <span class="tablink" data-tab="activities">Activities</span>
-      <span class="tablink" data-tab="marketing">Marketing Channel</span>
-    </div>
   </div>
 </header>
 
 <div class="wrap">
   <div id="app" class="loading"><div class="spinner"></div>Loading activity records…</div>
 
-  <!-- SUMMARY PAGE (default) -->
-  <div class="page active" id="page-summary">
-    <div class="sum-controls">
-      <div class="sum-lead">Pick one thing to explore, and see everything connected to it summarized below.</div>
-      <div class="field">
-        <label>Explore by</label>
-        <select id="sumDim">
-          <option value="product">Product</option>
-          <option value="district">District</option>
-          <option value="channelType">Marketing Channel Type</option>
-          <option value="date">Date Range</option>
-        </select>
-      </div>
-      <div class="field" id="sumValueWrap"></div>
-    </div>
-    <div id="sumBody"></div>
+  <!-- OVERVIEW (default) -->
+  <div class="page active" id="page-overview">
+    <div class="banner">Click any product, region, activity or type below to explore everything connected to it. Click again elsewhere to add more, or remove a filter with its ×.</div>
+    <div class="ov-chips" id="ovChips"></div>
+    <div class="ov-tiles" id="ovTiles"></div>
+    <div class="breakdowns" id="ovBreak"></div>
+    <div class="ov-note" id="ovNote"></div>
   </div>
 
-  <!-- ACTIVITIES PAGE -->
+  <!-- ACTIVITIES (merged) -->
   <div class="page" id="page-activities">
     <div class="kpis" id="actKpis"></div>
     <div class="filters">
-      <div class="filters-head">
-        <h2>Filters</h2>
-        <div class="btnrow">
-          <button class="btn" id="actReset">Reset all</button>
-          <button class="btn primary" id="actExport">Export results (CSV)</button>
-        </div>
+      <div class="filters-head"><h2>Filters</h2>
+        <div class="btnrow"><button class="btn" id="actReset">Reset all</button><button class="btn primary" id="actExport">Export results (CSV)</button></div>
       </div>
       <div class="grid" id="actFilterGrid"></div>
     </div>
@@ -321,27 +263,8 @@
     </div>
   </div>
 
-  <!-- MARKETING CHANNEL PAGE -->
-  <div class="page" id="page-marketing">
-    <div class="kpis" id="mktKpis"></div>
-    <div class="filters">
-      <div class="filters-head">
-        <h2>Filters</h2>
-        <button class="btn" id="mktReset">Reset all</button>
-      </div>
-      <div class="grid" id="mktFilterGrid"></div>
-    </div>
-    <div id="mktCharts"></div>
-    <div class="results">
-      <div class="results-head"><div class="count" id="mktCount"></div></div>
-      <div class="tablescroll"><table><thead id="mktThead"></thead><tbody id="mktTbody"></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- CHANNEL EFFICIENCY PAGE -->
-  <div class="page" id="page-efficiency">
-    <div id="effBody"></div>
-  </div>
+  <!-- CHANNEL EFFICIENCY -->
+  <div class="page" id="page-efficiency"><div id="effBody"></div></div>
 </div>
 
 <!-- Add Entry modal -->
@@ -351,10 +274,7 @@
     <div class="modal-body" id="addBody"></div>
     <div class="modal-foot" id="addFoot" style="display:none">
       <span class="form-msg" id="formMsg"></span>
-      <div class="btnrow">
-        <button class="btn" id="formBack">&larr; Back</button>
-        <button class="btn primary" id="formSubmit">Save entry</button>
-      </div>
+      <div class="btnrow"><button class="btn" id="formBack">&larr; Back</button><button class="btn primary" id="formSubmit">Save entry</button></div>
     </div>
   </div>
 </div>
@@ -367,229 +287,209 @@
   </div>
 </div>
 
-<!-- Recent entries modal -->
+<!-- Recent modal -->
 <div class="overlay" id="recentOverlay">
   <div class="modal">
     <div class="modal-head"><h3>Recently added entries</h3><span class="x" id="recentClose">&times;</span></div>
     <div class="modal-body">
-      <div class="banner">These entries were <b>added manually</b> through this dashboard. Everything else in the Activities table comes from the original uploaded CSV files.</div>
+      <div class="banner">These were <b>added manually</b> (typed in or uploaded). Everything else comes from the original CSV files.</div>
       <div class="recent-list" id="recentList"></div>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<datalist id="dl-districts"></datalist>
+<datalist id="dl-names"></datalist>
 <datalist id="dl-products"></datalist>
+<datalist id="dl-districts"></datalist>
 <datalist id="dl-zones"></datalist>
-<datalist id="dl-regions"></datalist>
 <datalist id="dl-territories"></datalist>
 
 <script>
 "use strict";
-
-const CHANNELS=["Hoarding","Pole Hoarding","Bus Branding","Water Tank Painting","Railway Station Ad",
-  "Banner","Retailer Flex Board","Agri Fair or Exhibition","Facebook","YouTube","Instagram",
-  "Website","WhatsApp Bot","IVR Call","Influencer Tie-up"];
-
-const ACT_TABLE_COLS=["Planned Date","Employee Name","Designation","Zone","Region","Territory",
-  "District","Activity","Activity Type","Product Category","Product","Status","Achieved"];
-const ACT_PAGE_SIZE=100;
-
-// activities filters (each maps to a CSV column)
+// ---- unified activity columns ----
+const UF={activityId:0,type:1,name:2,product:3,date:4,region:5,reach:6,cost:7,employee:8,designation:9,zone:10,territory:11,status:12,achieved:13,category:14,origin:15};
+const UACT_TABLE=[["type","Type"],["name","Activity"],["product","Product"],["date","Date"],["region","Region / District"],
+  ["reach","Farmer Reach"],["cost","Cost"],["employee","Employee"],["designation","Designation"],["zone","Zone"],
+  ["status","Status"],["achieved","Achieved"],["category","Product Category"]];
 const ACT_FILTERS=[
-  {key:"employee",label:"Employee Name",col:"Employee Name"},
-  {key:"designation",label:"Designation",col:"Designation"},
-  {key:"zone",label:"Zone",col:"Zone"},
-  {key:"region",label:"Region",col:"Region"},
-  {key:"territory",label:"Territory",col:"Territory"},
-  {key:"district",label:"District",col:"District"},
-  {key:"activity",label:"Activity",col:"Activity"},
-  {key:"activityType",label:"Activity Type",col:"Activity Type"},
-  {key:"productCategory",label:"Product Category",col:"Product Category"},
-  {key:"product",label:"Product",col:"Product"},
-  {key:"status",label:"Status",col:"Status"},
-  {key:"achieved",label:"Achieved",col:"Achieved"},
+  {key:"type",label:"Type of Activity"},{key:"name",label:"Activity"},{key:"product",label:"Product"},
+  {key:"category",label:"Product Category"},{key:"region",label:"Region / District"},{key:"zone",label:"Zone"},
+  {key:"territory",label:"Territory"},{key:"designation",label:"Designation"},{key:"employee",label:"Employee"},
+  {key:"status",label:"Status"},{key:"achieved",label:"Achieved"},
 ];
+const ACT_PAGE_SIZE=100;
+const CHANNELS=["Hoarding","Pole Hoarding","Bus Branding","Water Tank Painting","Railway Station Ad","Banner","Retailer Flex Board","Agri Fair or Exhibition","Facebook","YouTube","Instagram","Website","WhatsApp Bot","IVR Call","Influencer Tie-up"];
+const CH_TYPE={};
+["Facebook","YouTube","Instagram","Website","WhatsApp Bot","IVR Call","Influencer Tie-up"].forEach(c=>CH_TYPE[c]="Digital");
+["Hoarding","Pole Hoarding","Bus Branding","Water Tank Painting","Railway Station Ad","Banner","Retailer Flex Board"].forEach(c=>CH_TYPE[c]="OOH");
+CH_TYPE["Agri Fair or Exhibition"]="Field";
+function channelToType(c){return CH_TYPE[c]||"Digital";}
 
 const nf=new Intl.NumberFormat("en-US");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n;}
+function numOrBlank(v){if(v===""||v==null)return "";const n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));return isNaN(n)?"":n;}
 
 // ---- state ----
-let COLS=[],ROWS=[],IDX={},ORIGIN_IDX=0;
-let ACT_ROWS=[];                 // CSV rows + manual activity rows
-let DATE_MIN="",DATE_MAX="";
+let COLS=[],ROWS=[],IDX={};
 let manual={activity:[],marketing:[],sales:[]};
+let UROWS=[];                 // unified merged activities (arrays by UF)
 let dbConfigured=false;
+let DATE_MIN="",DATE_MAX="";
 let actSel={},actFrom="",actTo="",actPage=0,actFiltered=[];
-let mktSel={},mktFiltered=[];
-let currentTab="summary";
-let sumDim="product",sumValue="",sumFrom="",sumTo="";
+let ovFilters={};
+let currentTab="overview";
 
 // ---- load ----
 Promise.all([
   fetch("data.json").then(r=>{if(!r.ok)throw new Error("data.json "+r.status);return r.json();}),
   fetch("/api/entries").then(r=>r.json()).catch(()=>({ok:false,configured:false,entries:[]})),
 ]).then(([data,api])=>{
-  COLS=data.columns;ROWS=data.rows;COLS.forEach((c,i)=>IDX[c]=i);ORIGIN_IDX=COLS.length;
+  COLS=data.columns;ROWS=data.rows;COLS.forEach((c,i)=>IDX[c]=i);
   dbConfigured=!!api.configured;
-  ingestEntries(api.entries||[]);
+  ingest(api.entries||[]);
   boot();
 }).catch(err=>{
-  document.getElementById("app").innerHTML='<div class="empty"><b>Couldn\'t load the data.</b><br>'+esc(err.message)+
-    '<br><br>This page must be opened through a web address (Vercel), not by double-clicking the file.</div>';
+  document.getElementById("app").innerHTML='<div class="empty"><b>Couldn\'t load the data.</b><br>'+esc(err.message)+'</div>';
   document.getElementById("subtitle").textContent="Data failed to load";
 });
+function ingest(entries){manual={activity:[],marketing:[],sales:[]};for(const e of entries){if(manual[e.type])manual[e.type].push(e);}buildUnified();}
 
-function ingestEntries(entries){
-  manual={activity:[],marketing:[],sales:[]};
-  for(const e of entries){ if(manual[e.type]) manual[e.type].push(e); }
-  rebuildActRows();
+// ---- migration / unify ----
+function csvToUnified(r){
+  const U=new Array(16);
+  U[UF.activityId]=r[IDX["Activity ID"]]||"";U[UF.type]="Field";U[UF.name]=r[IDX["Activity"]]||"";
+  U[UF.product]=r[IDX["Product"]]||"";U[UF.date]=r[IDX["Planned Date"]]||"";U[UF.region]=r[IDX["District"]]||"";
+  U[UF.reach]="";U[UF.cost]="";U[UF.employee]=r[IDX["Employee Name"]]||"";U[UF.designation]=r[IDX["Designation"]]||"";
+  U[UF.zone]=r[IDX["Zone"]]||"";U[UF.territory]=r[IDX["Territory"]]||"";U[UF.status]=r[IDX["Status"]]||"";
+  U[UF.achieved]=r[IDX["Achieved"]]||"";U[UF.category]=r[IDX["Product Category"]]||"";U[UF.origin]="csv";
+  return U;
 }
-function rebuildActRows(){
-  const manualRows=manual.activity.map(e=>{
-    const r=new Array(COLS.length).fill("");
-    const set=(c,v)=>{r[IDX[c]]=v||"";};
-    set("Activity ID",e.activityId);
-    set("Planned Date",e.plannedDate);set("Employee Name",e.employeeName);set("Designation",e.designation);
-    set("Zone",e.zone);set("Region",e.region);set("Territory",e.territory);set("District",e.district);
-    set("Activity",e.activity);set("Activity Type",e.activityType);set("Product Category",e.productCategory);
-    set("Product",e.product);set("Status",e.status);set("Achieved",e.achieved);
-    r[ORIGIN_IDX]="manual";
-    return r;
-  });
-  // Manual entries first so they're easy to spot (badged) at the top of results.
-  ACT_ROWS=manualRows.concat(ROWS);
+function entryToUnified(e,type){
+  const U=new Array(16).fill("");U[UF.origin]="manual";
+  if(type==="marketing"){
+    U[UF.activityId]="";U[UF.type]=channelToType(e.channelType);U[UF.name]=e.channelType||"";U[UF.product]=e.product||"";
+    U[UF.date]=e.month?e.month+"-01":"";U[UF.region]=e.district||"";U[UF.reach]=numOrBlank(e.actual);U[UF.cost]=numOrBlank(e.cost);
+  }else if(e.typeOfActivity!==undefined){ // new unified activity
+    U[UF.activityId]=e.activityId||"";U[UF.type]=e.typeOfActivity||"";U[UF.name]=e.activityName||"";U[UF.product]=e.product||"";
+    U[UF.date]=e.date||"";U[UF.region]=e.region||"";U[UF.reach]=numOrBlank(e.reach);U[UF.cost]=numOrBlank(e.cost);
+    U[UF.employee]=e.employee||"";U[UF.designation]=e.designation||"";U[UF.zone]=e.zone||"";U[UF.territory]=e.territory||"";
+    U[UF.status]=e.status||"";U[UF.achieved]=e.achieved||"";U[UF.category]=e.category||"";
+  }else{ // old activity shape
+    U[UF.activityId]=e.activityId||"";U[UF.type]="Field";U[UF.name]=e.activity||"";U[UF.product]=e.product||"";
+    U[UF.date]=e.plannedDate||"";U[UF.region]=e.district||"";U[UF.reach]="";U[UF.cost]="";
+    U[UF.employee]=e.employeeName||"";U[UF.designation]=e.designation||"";U[UF.zone]=e.zone||"";U[UF.territory]=e.territory||"";
+    U[UF.status]=e.status||"";U[UF.achieved]=e.achieved||"";U[UF.category]=e.productCategory||"";
+  }
+  return U;
 }
+function buildUnified(){
+  UROWS=[];
+  for(const e of manual.marketing)UROWS.push(entryToUnified(e,"marketing"));
+  for(const e of manual.activity)UROWS.push(entryToUnified(e,"activity"));
+  for(const r of ROWS)UROWS.push(csvToUnified(r));
+}
+function manualActivityCount(){return manual.activity.length+manual.marketing.length;}
 
 // ---- boot ----
 function boot(){
   document.getElementById("app").style.display="none";
   updateSubtitle();
-
-  const di=IDX["Planned Date"];let mn="9999",mx="0000";
-  for(const r of ROWS){const d=r[di];if(d){if(d<mn)mn=d;if(d>mx)mx=d;}}
-  DATE_MIN=mn;DATE_MAX=mx;
-
-  fillDatalist("dl-districts",distinctCsv("District"));
-  fillDatalist("dl-products",distinctCsv("Product"));
-  fillDatalist("dl-zones",distinctCsv("Zone"));
-  fillDatalist("dl-regions",distinctCsv("Region"));
-  fillDatalist("dl-territories",distinctCsv("Territory"));
-
+  let mn="9999",mx="0000";for(const u of UROWS){const d=u[UF.date];if(d){if(d<mn)mn=d;if(d>mx)mx=d;}}
+  DATE_MIN=mn.length===10?mn:"2000-01-01";DATE_MAX=mx.length===10?mx:"2100-01-01";
+  refreshDatalists();
   buildActFilters();
-  buildMktFilters();
-  buildSummaryControls();
-  computeGlobalStats();
-  applyAct();
-  applyMkt();
-  renderSummary();
-  renderEfficiency();
-  updateRecent();
-  wireTabs();
-  wireModals();
+  applyAct();renderOverview();renderEfficiency();updateRecent();
+  wireTabs();wireModals();
 }
 function updateSubtitle(){
-  const t=ROWS.length+manual.activity.length;
-  let s=nf.format(t)+" activity records ("+nf.format(manual.activity.length)+" added manually)";
-  if(!dbConfigured) s+=" · database not connected yet";
+  let s=nf.format(UROWS.length)+" activities ("+nf.format(manualActivityCount())+" added manually)";
+  if(!dbConfigured)s+=" · database not connected yet";
   document.getElementById("subtitle").textContent=s;
 }
-function distinctCsv(col){const i=IDX[col],s=new Set();for(const r of ROWS){const v=r[i];if(v)s.add(v);}return [...s].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
-function fillDatalist(id,vals){document.getElementById(id).innerHTML=vals.map(v=>'<option value="'+esc(v)+'">').join("");}
+function distinctU(idx){const s=new Set();for(const u of UROWS){const v=u[idx];if(v)s.add(v);}return [...s].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));}
+function refreshDatalists(){
+  fillDatalist("dl-names",distinctU(UF.name));fillDatalist("dl-products",distinctU(UF.product));
+  fillDatalist("dl-districts",distinctU(UF.region));fillDatalist("dl-zones",distinctU(UF.zone));
+  fillDatalist("dl-territories",distinctU(UF.territory));
+}
+function fillDatalist(id,vals){const el=document.getElementById(id);if(el)el.innerHTML=vals.map(v=>'<option value="'+esc(v)+'">').join("");}
 
-// ---- reusable searchable dropdown ----
-// cfg: {label, getCounts(query)->Map(value->count), onChange(value), allowZero}
+// ---- searchable dropdown ----
 function makeDropdown(cfg){
   const root=document.createElement("div");root.className="sd";
-  root.innerHTML='<div class="box"><span class="val placeholder">Any</span>'+
-    '<span class="clear" title="Clear" style="display:none">&times;</span><span class="caret">&#9662;</span></div>'+
+  root.innerHTML='<div class="box"><span class="val placeholder">Any</span><span class="clear" title="Clear" style="display:none">&times;</span><span class="caret">&#9662;</span></div>'+
     '<div class="menu"><input type="text" placeholder="Search '+esc(cfg.label.toLowerCase())+'…"><div class="opts"></div></div>';
-  const box=root.querySelector(".box"),valEl=root.querySelector(".val"),clearEl=root.querySelector(".clear"),
-    search=root.querySelector("input"),opts=root.querySelector(".opts");
+  const box=root.querySelector(".box"),valEl=root.querySelector(".val"),clearEl=root.querySelector(".clear"),search=root.querySelector("input"),opts=root.querySelector(".opts");
   let value="";
   function render(){
     const counts=cfg.getCounts(search.value.trim().toLowerCase());
-    let list=[...counts.keys()];
-    list.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
+    let list=[...counts.keys()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true,sensitivity:"base"}));
     if(!list.length){opts.innerHTML='<div class="none">No matches</div>';return;}
     const frag=document.createDocumentFragment();
-    list.slice(0,500).forEach(v=>{
-      const d=document.createElement("div");d.className="opt"+(v===value?" sel":"");
-      const c=counts.get(v);
-      d.innerHTML='<span>'+esc(v)+'</span><span class="cnt">'+(c==null?"":nf.format(c))+'</span>';
-      d.addEventListener("click",()=>pick(v));frag.appendChild(d);
-    });
-    if(list.length>500){const m=document.createElement("div");m.className="none";m.textContent=nf.format(list.length-500)+" more… keep typing to narrow down";frag.appendChild(m);}
+    list.slice(0,500).forEach(v=>{const d=document.createElement("div");d.className="opt"+(v===value?" sel":"");const c=counts.get(v);
+      d.innerHTML='<span>'+esc(v)+'</span><span class="cnt">'+(c==null?"":nf.format(c))+'</span>';d.addEventListener("click",()=>pick(v));frag.appendChild(d);});
+    if(list.length>500){const m=document.createElement("div");m.className="none";m.textContent=nf.format(list.length-500)+" more… keep typing";frag.appendChild(m);}
     opts.innerHTML="";opts.appendChild(frag);
   }
-  function pick(v){setValue(v);cfg.onChange(v);closeAllDropdowns();}
+  function pick(v){setValue(v);cfg.onChange(v);closeDropdowns();}
   function setValue(v){value=v||"";valEl.textContent=value||"Any";valEl.classList.toggle("placeholder",!value);clearEl.style.display=value?"inline":"none";}
-  box.addEventListener("click",e=>{if(e.target===clearEl)return;const willOpen=!root.classList.contains("open");closeAllDropdowns();if(willOpen){root.classList.add("open");search.value="";render();search.focus();}});
+  box.addEventListener("click",e=>{if(e.target===clearEl)return;const willOpen=!root.classList.contains("open");closeDropdowns();if(willOpen){root.classList.add("open");search.value="";render();search.focus();}});
   clearEl.addEventListener("click",e=>{e.stopPropagation();pick("");});
   search.addEventListener("input",render);
   return {el:root,setValue,getValue:()=>value};
 }
-function closeAllDropdowns(){document.querySelectorAll(".sd.open").forEach(el=>el.classList.remove("open"));}
-document.addEventListener("click",e=>{if(!e.target.closest(".sd"))closeAllDropdowns();});
+function closeDropdowns(){document.querySelectorAll(".sd.open").forEach(el=>el.classList.remove("open"));}
+document.addEventListener("click",e=>{if(!e.target.closest(".sd"))closeDropdowns();});
 
 // ================= ACTIVITIES =================
 const actDrops={};
-function actPassesExcept(r,skip){
-  for(const f of ACT_FILTERS){if(f.key===skip)continue;const w=actSel[f.key];if(w&&r[IDX[f.col]]!==w)return false;}
-  const d=r[IDX["Planned Date"]];
-  if(actFrom&&(!d||d<actFrom))return false;
-  if(actTo&&(!d||d>actTo))return false;
-  return true;
+function actPassesExcept(u,skip){
+  for(const f of ACT_FILTERS){if(f.key===skip)continue;const w=actSel[f.key];if(w&&u[UF[f.key]]!==w)return false;}
+  const d=u[UF.date];if(actFrom&&(!d||d<actFrom))return false;if(actTo&&(!d||d>actTo))return false;return true;
 }
 function buildActFilters(){
   const grid=document.getElementById("actFilterGrid");grid.innerHTML="";
   ACT_FILTERS.forEach(f=>{
     const wrap=document.createElement("div");wrap.className="field";wrap.innerHTML='<label>'+esc(f.label)+'</label>';
-    const ci=IDX[f.col];
-    const dd=makeDropdown({label:f.label,
-      getCounts:q=>{const m=new Map();for(const r of ACT_ROWS){if(!actPassesExcept(r,f.key))continue;const v=r[ci];if(!v)continue;if(q&&!v.toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}return m;},
+    const ci=UF[f.key];
+    const dd=makeDropdown({label:f.label,getCounts:q=>{const m=new Map();for(const u of UROWS){if(!actPassesExcept(u,f.key))continue;const v=u[ci];if(!v)continue;if(q&&!String(v).toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}return m;},
       onChange:v=>{actSel[f.key]=v;actPage=0;applyAct();}});
     actDrops[f.key]=dd;wrap.appendChild(dd.el);grid.appendChild(wrap);
   });
   const dr=document.createElement("div");dr.className="field";
-  dr.innerHTML='<label>Date range (Planned Date)</label><div class="daterow">'+
-    '<div><div class="sub">From</div><input type="date" id="actFrom" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div>'+
-    '<div><div class="sub">To</div><input type="date" id="actTo" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div></div>';
+  dr.innerHTML='<label>Date range</label><div class="daterow"><div><div class="sub">From</div><input type="date" id="actFrom" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div><div><div class="sub">To</div><input type="date" id="actTo" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div></div>';
   grid.appendChild(dr);
   dr.querySelector("#actFrom").addEventListener("change",e=>{actFrom=e.target.value;actPage=0;applyAct();});
   dr.querySelector("#actTo").addEventListener("change",e=>{actTo=e.target.value;actPage=0;applyAct();});
-  document.getElementById("actReset").addEventListener("click",()=>{
-    actSel={};actFrom="";actTo="";actPage=0;
-    Object.values(actDrops).forEach(d=>d.setValue(""));
-    const a=document.getElementById("actFrom"),b=document.getElementById("actTo");if(a)a.value="";if(b)b.value="";
-    applyAct();
-  });
+  document.getElementById("actReset").addEventListener("click",()=>{actSel={};actFrom="";actTo="";actPage=0;Object.values(actDrops).forEach(d=>d.setValue(""));const a=document.getElementById("actFrom"),b=document.getElementById("actTo");if(a)a.value="";if(b)b.value="";applyAct();});
   document.getElementById("actExport").addEventListener("click",exportAct);
 }
-function applyAct(){actFiltered=ACT_ROWS.filter(r=>actPassesExcept(r,null));renderActKpis();renderActTable();}
+function applyAct(){actFiltered=UROWS.filter(u=>actPassesExcept(u,null));renderActKpis();renderActTable();}
 function renderActKpis(){
-  const si=IDX["Status"],ai=IDX["Achieved"],ei=IDX["Employee Name"];
-  let completed=0,achieved=0;const emps=new Set();
-  for(const r of actFiltered){if(r[si]==="Completed")completed++;if(r[ai]==="Yes")achieved++;if(r[ei])emps.add(r[ei]);}
-  const n=actFiltered.length,pct=x=>n?Math.round(x/n*100)+"%":"–";
-  const k=[{n:nf.format(n),l:"Results",info:"act_results"},{n:nf.format(completed)+" · "+pct(completed),l:"Completed",info:"act_completion"},
-    {n:nf.format(achieved)+" · "+pct(achieved),l:"Achieved",info:"act_achieved"},{n:nf.format(emps.size),l:"Employees",info:"act_employees"}];
-  document.getElementById("actKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+infoIcon(x.info)+'</div></div>').join("");
+  let completed=0,statusable=0,reach=0,cost=0;
+  for(const u of actFiltered){const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){statusable++;if(st==="Completed")completed++;}reach+=num(u[UF.reach]);cost+=num(u[UF.cost]);}
+  const rate=statusable?Math.round(completed/statusable*100)+"%":"–";
+  const k=[{n:nf.format(actFiltered.length),l:"Results"},{n:rate,l:"Completion rate",info:"completion"},{n:nf.format(reach),l:"Farmer reach"},{n:"₹"+nf.format(cost),l:"Total cost"}];
+  document.getElementById("actKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+(x.info?infoIcon(x.info):"")+'</div></div>').join("");
 }
 function renderActTable(){
-  document.getElementById("actThead").innerHTML="<tr>"+ACT_TABLE_COLS.map(c=>"<th>"+esc(c)+"</th>").join("")+"</tr>";
+  document.getElementById("actThead").innerHTML="<tr>"+UACT_TABLE.map(c=>"<th>"+esc(c[1])+"</th>").join("")+"</tr>";
   const tb=document.getElementById("actTbody"),total=actFiltered.length,pages=Math.max(1,Math.ceil(total/ACT_PAGE_SIZE));
-  if(actPage>=pages)actPage=pages-1;
-  const start=actPage*ACT_PAGE_SIZE,slice=actFiltered.slice(start,start+ACT_PAGE_SIZE);
-  if(!total){tb.innerHTML='<tr><td colspan="'+ACT_TABLE_COLS.length+'"><div class="empty">No records match these filters.</div></td></tr>';}
+  if(actPage>=pages)actPage=pages-1;const start=actPage*ACT_PAGE_SIZE,slice=actFiltered.slice(start,start+ACT_PAGE_SIZE);
+  if(!total){tb.innerHTML='<tr><td colspan="'+UACT_TABLE.length+'"><div class="empty">No records match these filters.</div></td></tr>';}
   else{
-    tb.innerHTML=slice.map(r=>{
-      const manualB=r[ORIGIN_IDX]==="manual"?'<span class="badge-manual">MANUAL</span>':"";
-      return "<tr>"+ACT_TABLE_COLS.map((c,ci)=>{
-        const v=r[IDX[c]]||"";
-        if(c==="Status")return "<td>"+(v?'<span class="pill '+v+'">'+v+"</span>":"")+"</td>";
-        if(c==="Achieved")return "<td>"+(v?'<span class="pill '+v+'">'+v+"</span>":"")+"</td>";
+    tb.innerHTML=slice.map(u=>{
+      const manualB=u[UF.origin]==="manual"?'<span class="badge-manual">MANUAL</span>':"";
+      return "<tr>"+UACT_TABLE.map((c,ci)=>{
+        const key=c[0];let v=u[UF[key]];
+        if(key==="type")return "<td>"+(v?'<span class="tpill '+v+'">'+esc(v)+"</span>":"")+"</td>";
+        if(key==="status")return "<td>"+(v?'<span class="pill '+v+'">'+esc(v)+"</span>":"")+"</td>";
+        if(key==="achieved")return "<td>"+(v?'<span class="pill '+v+'">'+esc(v)+"</span>":"")+"</td>";
+        if(key==="cost")return "<td>"+(v===""||v==null?"":"₹"+nf.format(num(v)))+"</td>";
+        if(key==="reach")return "<td>"+(v===""||v==null?"":nf.format(num(v)))+"</td>";
+        v=v||"";
         if(ci===0)return '<td>'+manualB+esc(v)+"</td>";
         return '<td title="'+esc(v)+'">'+esc(v)+"</td>";
       }).join("")+"</tr>";
@@ -598,246 +498,173 @@ function renderActTable(){
   document.getElementById("actCount").innerHTML=nf.format(total)+" record"+(total===1?"":"s")+' <span>match your filters</span>';
   const pager=document.getElementById("actPager");
   if(total<=ACT_PAGE_SIZE){pager.innerHTML="";return;}
-  pager.innerHTML='<button class="btn" id="aprev" '+(actPage===0?"disabled":"")+'>&larr; Prev</button>'+
-    '<span class="info">Showing '+nf.format(start+1)+'–'+nf.format(Math.min(start+ACT_PAGE_SIZE,total))+' of '+nf.format(total)+' (page '+(actPage+1)+' of '+nf.format(pages)+')</span>'+
-    '<button class="btn" id="anext" '+(actPage>=pages-1?"disabled":"")+'>Next &rarr;</button>';
+  pager.innerHTML='<button class="btn" id="aprev" '+(actPage===0?"disabled":"")+'>&larr; Prev</button><span class="info">Showing '+nf.format(start+1)+'–'+nf.format(Math.min(start+ACT_PAGE_SIZE,total))+' of '+nf.format(total)+' (page '+(actPage+1)+' of '+nf.format(pages)+')</span><button class="btn" id="anext" '+(actPage>=pages-1?"disabled":"")+'>Next &rarr;</button>';
   const pv=pager.querySelector("#aprev"),nx=pager.querySelector("#anext");
-  if(pv)pv.onclick=()=>{if(actPage>0){actPage--;renderActTable();actScrollTop();}};
-  if(nx)nx.onclick=()=>{if(actPage<pages-1){actPage++;renderActTable();actScrollTop();}};
+  if(pv)pv.onclick=()=>{if(actPage>0){actPage--;renderActTable();document.querySelector("#page-activities .tablescroll").scrollTop=0;}};
+  if(nx)nx.onclick=()=>{if(actPage<pages-1){actPage++;renderActTable();document.querySelector("#page-activities .tablescroll").scrollTop=0;}};
 }
-function actScrollTop(){document.querySelector("#page-activities .tablescroll").scrollTop=0;}
 function exportAct(){
-  const cols=COLS,head=cols.map(csvCell).join(","),
-    lines=actFiltered.map(r=>cols.map((c,i)=>csvCell(r[i])).join(","));
-  downloadCsv("filtered_activities_"+today()+".csv",head+"\n"+lines.join("\n"));
+  const cols=UACT_TABLE.map(c=>c[1]);
+  const head=cols.map(csvCell).join(",");
+  const lines=actFiltered.map(u=>UACT_TABLE.map(c=>csvCell(u[UF[c[0]]])).join(","));
+  downloadCsv("activities_"+today()+".csv",head+"\n"+lines.join("\n"));
 }
 
-// ================= MARKETING CHANNEL =================
-const MKT_FILTERS=[
-  {key:"channelType",label:"Channel Type",get:e=>e.channelType},
-  {key:"product",label:"Product",get:e=>e.product},
-  {key:"district",label:"District",get:e=>e.district},
-  {key:"month",label:"Month",get:e=>e.month},
-];
-const mktDrops={};
-function mktPassesExcept(e,skip){
-  for(const f of MKT_FILTERS){if(f.key===skip)continue;const w=mktSel[f.key];if(w&&(f.get(e)||"")!==w)return false;}
-  return true;
+// ================= OVERVIEW =================
+function ovSubset(){return UROWS.filter(u=>{for(const k in ovFilters){if(u[UF[k]]!==ovFilters[k])return false;}return true;});}
+const OV_LABEL={type:"Type",name:"Activity",product:"Product",category:"Category",region:"Region"};
+function renderOverview(){
+  const rows=ovSubset();
+  // chips
+  const chipHost=document.getElementById("ovChips");
+  const keys=Object.keys(ovFilters);
+  chipHost.innerHTML=keys.length?('<span class="lead">Exploring:</span>'+keys.map(k=>'<span class="ov-chip"><span class="k">'+esc(OV_LABEL[k])+':</span> '+esc(ovFilters[k])+' <span class="x" data-rm="'+esc(k)+'">&times;</span></span>').join("")+'<button class="btn" id="ovClear" style="padding:4px 10px">Clear all</button>'):'<span class="lead">Showing everything. Click a name below to focus on it.</span>';
+  // tiles
+  let completed=0,statusable=0,reach=0,cost=0;const prods=new Set(),regs=new Set();
+  for(const u of rows){const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){statusable++;if(st==="Completed")completed++;}reach+=num(u[UF.reach]);cost+=num(u[UF.cost]);if(u[UF.product])prods.add(u[UF.product]);if(u[UF.region])regs.add(u[UF.region]);}
+  const rate=statusable?Math.round(completed/statusable*100)+"%":"–";
+  const tiles=[{n:nf.format(rows.length),l:"Total activities"},{n:rate,l:"Completion rate",info:"completion"},{n:nf.format(prods.size),l:"Products promoted"},{n:nf.format(regs.size),l:"Regions active"},{n:nf.format(reach),l:"Farmer reach"},{n:"₹"+nf.format(cost),l:"Total cost"}];
+  document.getElementById("ovTiles").innerHTML=tiles.map(x=>'<div class="tile"><div class="n">'+x.n+'</div><div class="l">'+x.l+(x.info?infoIcon(x.info):"")+'</div></div>').join("");
+  // breakdowns
+  const cards=[
+    bdCard("Activity type / channel mix","How activities split across Digital, OOH and Field.",countBy(rows,UF.type),"type",99,typeColor),
+    bdCard("Top products by activity volume","Which products have the most activity.",countBy(rows,UF.product),"product",8),
+    bdCard("Category split","Activities by product category.",countBy(rows,UF.category),"category",8),
+    bdCard("Top regions / districts","Where activity is concentrated.",countBy(rows,UF.region),"region",8),
+    bdCard("Top activities","The most common specific activities.",countBy(rows,UF.name),"name",8),
+  ];
+  document.getElementById("ovBreak").innerHTML=cards.join("");
+  document.getElementById("ovNote").innerHTML='Every underlined name is clickable. <a id="ovToList" style="color:var(--brand);cursor:pointer;font-weight:600">View these '+nf.format(rows.length)+' records in the Activities list →</a>';
+  const toList=document.getElementById("ovToList");if(toList)toList.addEventListener("click",overviewToActivities);
+  const clr=document.getElementById("ovClear");if(clr)clr.addEventListener("click",()=>{ovFilters={};renderOverview();});
 }
-function buildMktFilters(){
-  const grid=document.getElementById("mktFilterGrid");grid.innerHTML="";
-  MKT_FILTERS.forEach(f=>{
-    const wrap=document.createElement("div");wrap.className="field";wrap.innerHTML='<label>'+esc(f.label)+'</label>';
-    const dd=makeDropdown({label:f.label,
-      getCounts:q=>{
-        const m=new Map();
-        // base option universe
-        let universe=[];
-        if(f.key==="channelType")universe=CHANNELS.slice();
-        else if(f.key==="product")universe=productUniverse();
-        else if(f.key==="district")universe=districtUniverse();
-        else universe=monthUniverse();
-        universe.forEach(v=>{if(!q||v.toLowerCase().includes(q))m.set(v,0);});
-        // counts from marketing entries passing other filters
-        for(const e of manual.marketing){if(!mktPassesExcept(e,f.key))continue;const v=f.get(e)||"";if(!v)continue;if(q&&!v.toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
-        return m;
-      },
-      onChange:v=>{mktSel[f.key]=v;applyMkt();}});
-    mktDrops[f.key]=dd;wrap.appendChild(dd.el);grid.appendChild(wrap);
-  });
-  document.getElementById("mktReset").addEventListener("click",()=>{mktSel={};Object.values(mktDrops).forEach(d=>d.setValue(""));applyMkt();});
+function typeColor(label){return label==="Digital"?"var(--digital)":label==="OOH"?"var(--ooh)":label==="Field"?"var(--field)":"var(--brand)";}
+function bdCard(title,desc,counts,field,limit,colorFn){
+  const list=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]).slice(0,limit);
+  let body;
+  if(!list.length)body='<div class="sum-empty">No data.</div>';
+  else{const max=list[0][1]||1;body=list.map(([k,v])=>{const w=Math.max(4,Math.round(v/max*100));const col=colorFn?colorFn(k):"var(--brand)";
+    return '<div class="hbar"><div class="lbl"><span class="ov-click" data-f="'+esc(field)+'" data-v="'+esc(k)+'">'+esc(k)+'</span></div><div class="track"><div class="fill" style="width:'+w+'%;background:'+col+'"></div></div><div class="num">'+nf.format(v)+'</div></div>';}).join("");}
+  return '<div class="bd-card"><h3>'+esc(title)+'</h3><div class="sdesc">'+esc(desc)+'</div>'+body+'</div>';
 }
-function districtUniverse(){
-  const s=new Set(distinctCsv("District"));
-  manual.marketing.forEach(e=>{if(e.district)s.add(e.district);});
-  manual.sales.forEach(e=>{if(e.district)s.add(e.district);});
-  return [...s];
+document.getElementById("page-overview").addEventListener("click",e=>{
+  const c=e.target.closest(".ov-click");if(c){ovFilters[c.getAttribute("data-f")]=c.getAttribute("data-v");renderOverview();return;}
+  const rm=e.target.closest("[data-rm]");if(rm){delete ovFilters[rm.getAttribute("data-rm")];renderOverview();}
+});
+function overviewToActivities(){
+  actSel={};actFrom="";actTo="";actPage=0;
+  Object.values(actDrops).forEach(d=>d.setValue(""));
+  for(const k in ovFilters){if(actDrops[k]){actSel[k]=ovFilters[k];actDrops[k].setValue(ovFilters[k]);}}
+  applyAct();switchTab("activities");
 }
-function productUniverse(){
-  const s=new Set(distinctCsv("Product"));
-  manual.marketing.forEach(e=>{if(e.product)s.add(e.product);});
-  manual.sales.forEach(e=>{if(e.product)s.add(e.product);});
-  return [...s];
+function countBy(rows,ci){const m=new Map();for(const u of rows){const v=u[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
+
+// ================= CHANNEL EFFICIENCY =================
+const EFF_MIN_COMBOS=5;
+function computeEfficiency(){
+  const salesDM=new Map();
+  for(const e of manual.sales){const v=num(e.salesValue);if(!e.district||!e.month||v<=0)continue;const k=e.district+"|"+e.month;salesDM.set(k,(salesDM.get(k)||0)+v);}
+  const costCDM=new Map();
+  for(const u of UROWS){const c=num(u[UF.cost]);if(c<=0)continue;const name=u[UF.name],reg=u[UF.region],d=u[UF.date];if(!name||!reg||!d)continue;const month=d.slice(0,7);const k=name+"|"+reg+"|"+month;costCDM.set(k,(costCDM.get(k)||0)+c);}
+  const combos=new Map();
+  for(const [k,cost] of costCDM){const i1=k.indexOf("|"),i2=k.indexOf("|",i1+1);const ch=k.slice(0,i1),reg=k.slice(i1+1,i2),month=k.slice(i2+1);const sales=salesDM.get(reg+"|"+month);if(sales==null)continue;const ck=ch+"|"+reg;const o=combos.get(ck)||{channel:ch,district:reg,cost:0,sales:0};o.cost+=cost;o.sales+=sales;combos.set(ck,o);}
+  const list=[...combos.values()].filter(o=>o.cost>0&&o.sales>0).map(o=>({...o,spr:o.sales/o.cost}));
+  const count=list.length,avg=count?list.reduce((s,o)=>s+o.spr,0)/count:0;
+  list.forEach(o=>{o.index=avg?Math.round(o.spr/avg*100):100;});list.sort((a,b)=>b.spr-a.spr);
+  return {list,count,avg};
 }
-function monthUniverse(){
-  const s=new Set();
-  manual.marketing.forEach(e=>{if(e.month)s.add(e.month);});
-  manual.sales.forEach(e=>{if(e.month)s.add(e.month);});
-  return [...s].sort();
-}
-function applyMkt(){mktFiltered=manual.marketing.filter(e=>mktPassesExcept(e,null));renderMktKpis();renderMktCharts();renderMktTable();}
-function num(v){const n=parseFloat(v);return isNaN(n)?0:n;}
-function renderMktKpis(){
-  let target=0,actual=0,cost=0;
-  for(const e of mktFiltered){target+=num(e.target);actual+=num(e.actual);cost+=num(e.cost);}
-  const k=[{n:nf.format(mktFiltered.length),l:"Channel entries",info:"mkt_entries"},{n:nf.format(actual),l:"Total actual",info:"mkt_actual"},
-    {n:nf.format(target),l:"Total target",info:"mkt_target"},{n:"₹"+nf.format(cost),l:"Total cost",info:"mkt_cost"}];
-  document.getElementById("mktKpis").innerHTML=k.map(x=>'<div class="kpi"><div class="n">'+x.n+'</div><div class="l">'+x.l+infoIcon(x.info)+'</div></div>').join("");
-}
-const MKT_TABLE_COLS=[["channelType","Channel Type"],["product","Product"],["district","District"],["month","Month"],
-  ["target","Target"],["actual","Actual"],["cost","Cost"],["notes","Notes"],["created_at","Added"]];
-function renderMktTable(){
-  document.getElementById("mktThead").innerHTML="<tr>"+MKT_TABLE_COLS.map(c=>"<th>"+esc(c[1])+"</th>").join("")+"</tr>";
-  const tb=document.getElementById("mktTbody");
-  if(!manual.marketing.length){
-    tb.innerHTML='<tr><td colspan="'+MKT_TABLE_COLS.length+'"><div class="empty">No marketing channel entries yet.<br>Use <b>+ Add New Entry</b> to add one.</div></td></tr>';
-  }else if(!mktFiltered.length){
-    tb.innerHTML='<tr><td colspan="'+MKT_TABLE_COLS.length+'"><div class="empty">No entries match these filters.</div></td></tr>';
-  }else{
-    tb.innerHTML=mktFiltered.map(e=>"<tr>"+MKT_TABLE_COLS.map(c=>{
-      let v=e[c[0]];
-      if(c[0]==="created_at")v=fmtDateTime(v);
-      else if(["target","actual","cost"].includes(c[0]))v=(v===undefined||v===null||v==="")?"":nf.format(num(v));
-      else v=v||"";
-      return '<td title="'+esc(v)+'">'+esc(v)+"</td>";
-    }).join("")+"</tr>").join("");
+function renderEfficiency(){
+  const host=document.getElementById("effBody");if(!host)return;
+  const {list,count,avg}=computeEfficiency();
+  const status='<div class="banner">This matches activity <b>cost</b> with <b>Sales value</b> for the same region and month. It needs at least <b>'+EFF_MIN_COMBOS+'</b> activity + region combinations with both. Currently: <b>'+count+' of '+EFF_MIN_COMBOS+'</b>.</div>';
+  if(count<EFF_MIN_COMBOS){
+    host.innerHTML=status+'<div class="sum-section"><h3>Spend vs Sales analysis</h3><div style="margin:-4px 0 12px;color:var(--muted);font-size:13px">What each one means: Sales per Rupee Spent'+infoIcon("eff_spr")+' · Channel Efficiency Index'+infoIcon("eff_index")+' · Opportunity Matrix'+infoIcon("eff_matrix")+'</div><div class="sum-empty" style="padding:40px">Not enough data yet.<br><br>These turn on automatically once at least '+EFF_MIN_COMBOS+' activity + region combinations have both cost and sales in the same month.<br><br><b>'+count+' of '+EFF_MIN_COMBOS+'</b> available so far.</div></div>';return;
   }
-  const total=mktFiltered.length;
-  document.getElementById("mktCount").innerHTML=nf.format(total)+" channel entr"+(total===1?"y":"ies")+' <span>match your filters</span>';
+  const rows=list.map((o,i)=>{const cls=o.index>=100?"up":"down",arw=o.index>=100?"▲":"▼";return '<tr><td>'+(i+1)+'</td><td>'+esc(o.channel)+' — '+esc(o.district)+'</td><td class="num">₹'+o.spr.toFixed(2)+'</td><td class="num idx '+cls+'">'+arw+' '+o.index+'</td><td class="num">₹'+nf.format(Math.round(o.sales))+'</td></tr>';}).join("");
+  const listCard='<div class="sum-section"><h3>Sales per rupee spent &amp; efficiency</h3><div class="sdesc">Sales value ÷ activity cost per activity + region (matched by month). Efficiency: 100 = the ₹'+avg.toFixed(2)+' average, above is better.</div><div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>Activity — Region</th><th>Sales per ₹1'+infoIcon("eff_spr")+'</th><th>Efficiency'+infoIcon("eff_index")+'</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  const salesArr=list.map(o=>o.sales).sort((a,b)=>a-b),m=salesArr.length,median=m%2?salesArr[(m-1)/2]:(salesArr[m/2-1]+salesArr[m/2])/2;
+  const g={scale:[],invest:[],optimise:[],reduce:[]};
+  list.forEach(o=>{const he=o.index>=100,hs=o.sales>=median;g[he?(hs?"scale":"invest"):(hs?"optimise":"reduce")].push(o);});
+  const boxes=[{k:"scale",t:"Scale",r:"High efficiency · High sales",d:"Working well and big — do more."},{k:"invest",t:"Invest",r:"High efficiency · Low sales",d:"Efficient but small — worth growing."},{k:"optimise",t:"Optimise",r:"Low efficiency · High sales",d:"Big but wasteful — tighten spend."},{k:"reduce",t:"Reduce",r:"Low efficiency · Low sales",d:"Weak on both — consider cutting."}];
+  const matrix='<div class="sum-section"><h3>Opportunity matrix'+infoIcon("eff_matrix")+'</h3><div class="sdesc">Each activity + region placed by efficiency (vs 100) and total sales (vs the middle value).</div><div class="matrix">'+boxes.map(b=>'<div class="mbox '+b.k+'"><h4>'+b.t+'</h4><div class="mrule">'+b.r+'</div><div class="mdesc">'+b.d+'</div>'+(g[b.k].length?g[b.k].map(o=>'<span class="chip2">'+esc(o.channel)+' — '+esc(o.district)+'</span>').join(""):'<span class="empty-mini">None</span>')+'</div>').join("")+'</div></div>';
+  host.innerHTML=status+listCard+matrix;
 }
 
-// ---- Part 4: comparison charts ----
-function renderMktCharts(){
-  const host=document.getElementById("mktCharts");
-  const district=mktSel.district;
-  if(!district){
-    host.innerHTML='<div class="hint">Select a <b>District</b> above to compare channel activity vs sales over time for that district.</div>';
-    return;
-  }
-  // series for this district (respect month filter too if set)
-  const monthOk=m=>!mktSel.month||m===mktSel.month;
-  const chActual=new Map(), salesVal=new Map();
-  for(const e of manual.marketing){if(e.district===district&&e.month&&monthOk(e.month))chActual.set(e.month,(chActual.get(e.month)||0)+num(e.actual));}
-  for(const e of manual.sales){if(e.district===district&&e.month&&monthOk(e.month))salesVal.set(e.month,(salesVal.get(e.month)||0)+num(e.salesValue));}
-  const months=[...new Set([...chActual.keys(),...salesVal.keys()])].sort();
-
-  host.innerHTML='<div class="subhead" style="margin-bottom:10px">Channel activity vs sales comparison'+infoIcon("mkt_compare")+'</div>'+
-    '<div class="charts"><div id="chartA"></div><div id="chartB"></div></div>'+
-    '<div class="chart-note">Showing <b>'+esc(district)+'</b>. The sales chart fills in automatically as soon as sales entries exist for this district — no changes needed.</div>';
-  document.getElementById("chartA").appendChild(lineChart({
-    title:"Channel activity over time",sub:"Sum of Actual per month",
-    months, valueByMonth:chActual, color:"var(--chart-blue)",
-    emptyMsg:"No channel activity recorded for "+district+" yet."}));
-  document.getElementById("chartB").appendChild(lineChart({
-    title:"Sales over time",sub:"Sum of Sales Value per month",
-    months, valueByMonth:salesVal, color:"var(--chart-aqua)", prefix:"₹",
-    emptyMsg:"No sales data yet for "+district+"."}));
-}
-let tipEl=null;
-function tooltip(){if(!tipEl){tipEl=document.createElement("div");tipEl.style.cssText="position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 9px;border-radius:7px;font-size:12px;font-weight:600;opacity:0;transition:.1s;z-index:300;white-space:nowrap";document.body.appendChild(tipEl);}return tipEl;}
-function lineChart(o){
-  const card=document.createElement("div");card.className="chartcard";
-  const hasData=o.months.length&&o.months.some(m=>o.valueByMonth.get(m)!=null);
-  let inner='<h4>'+esc(o.title)+'</h4><div class="sub">'+esc(o.sub)+'</div>';
-  if(!hasData){card.innerHTML=inner+'<div class="chart-empty">'+esc(o.emptyMsg)+'</div>';return card;}
-  const W=520,H=210,padL=54,padR=16,padT=14,padB=42,plotW=W-padL-padR,plotH=H-padT-padB;
-  let max=0;o.months.forEach(m=>{max=Math.max(max,o.valueByMonth.get(m)||0);});
-  const nice=niceMax(max),n=o.months.length;
-  const xOf=i=>padL+(n<=1?plotW/2:plotW*i/(n-1));
-  const yOf=v=>padT+plotH-(nice?plotH*v/nice:0);
-  const prefix=o.prefix||"";
-  let g="";
-  for(let t=0;t<=2;t++){const val=nice*t/2,y=yOf(val);
-    g+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--chart-grid)" stroke-width="1"/>';
-    g+='<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="var(--chart-axis)">'+prefix+shortNum(val)+'</text>';}
-  const step=Math.ceil(n/8);
-  let xl="";o.months.forEach((m,i)=>{if(i%step===0||i===n-1)xl+='<text x="'+xOf(i)+'" y="'+(H-padB+20)+'" text-anchor="middle" font-size="11" fill="var(--chart-axis)">'+esc(fmtMonth(m))+'</text>';});
-  let path="",dots="";
-  o.months.forEach((m,i)=>{const v=o.valueByMonth.get(m)||0,x=xOf(i),y=yOf(v);
-    path+=(i===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1)+" ";
-    dots+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="4" fill="'+o.color+'" stroke="var(--chart-surface)" stroke-width="2" data-lbl="'+esc(fmtMonth(m)+": "+prefix+nf.format(v))+'"/>';});
-  card.innerHTML=inner+'<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(o.title)+'">'+
-    g+'<line x1="'+padL+'" y1="'+(padT+plotH)+'" x2="'+(W-padR)+'" y2="'+(padT+plotH)+'" stroke="var(--chart-axis)" stroke-width="1"/>'+
-    '<path d="'+path+'" fill="none" stroke="'+o.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+dots+xl+'</svg>';
-  card.querySelectorAll("circle").forEach(c=>{
-    c.addEventListener("mouseenter",ev=>{const t=tooltip();t.textContent=c.getAttribute("data-lbl");t.style.opacity="1";move(ev);});
-    c.addEventListener("mousemove",move);
-    c.addEventListener("mouseleave",()=>{tooltip().style.opacity="0";});
-    function move(ev){const t=tooltip();t.style.left=(ev.clientX+12)+"px";t.style.top=(ev.clientY-10)+"px";}
-  });
-  return card;
-}
-function niceMax(m){if(m<=0)return 10;const p=Math.pow(10,Math.floor(Math.log10(m)));const r=m/p;const s=r<=1?1:r<=2?2:r<=5?5:10;return s*p;}
-function shortNum(v){if(v>=1e7)return(v/1e7).toFixed(1)+"Cr";if(v>=1e5)return(v/1e5).toFixed(1)+"L";if(v>=1e3)return(v/1e3).toFixed(0)+"k";return String(Math.round(v));}
-function fmtMonth(m){const p=String(m).split("-");if(p.length<2)return m;const names=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const mo=parseInt(p[1],10);return (names[mo-1]||p[1])+" "+p[0].slice(2);}
-function fmtDateTime(s){if(!s)return "";const d=new Date(s);if(isNaN(d))return String(s).slice(0,10);return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
+// ================= INFO POPOVERS =================
+function effStatus(){const {count}=computeEfficiency();return count>=EFF_MIN_COMBOS?"Showing real numbers — "+count+" combinations qualify.":"Waiting on data — needs cost and sales in the same region + month for at least "+EFF_MIN_COMBOS+" combinations (currently "+count+" of "+EFF_MIN_COMBOS+").";}
+const INFO={
+  completion:{title:"Completion rate",what:"Of the activities that have a status (Completed / Expired / Rejected), how many were Completed.",formula:"Completed ÷ activities with a status × 100.",status:()=>"Real numbers from field-activity records. New channel-style entries have no status, so they aren't counted here."},
+  eff_spr:{title:"Sales per Rupee Spent",what:"For an activity run in a region, how much sales value is linked to each ₹1 of cost.",formula:"Sales value ÷ activity cost, matched by the same region and month.",status:effStatus},
+  eff_index:{title:"Channel Efficiency Index",what:"A score comparing each activity + region to the average. 100 = average, above is better.",formula:"Its sales-per-rupee ÷ the average sales-per-rupee × 100.",status:effStatus},
+  eff_matrix:{title:"Opportunity Matrix",what:"Sorts each activity + region into four action groups by efficiency and total sales.",formula:"Efficiency vs 100 and total sales vs the middle value (median) → Scale / Invest / Optimise / Reduce.",status:effStatus},
+};
+function infoIcon(k){return '<span class="info-i" data-info="'+k+'" role="button" tabindex="0" aria-label="What this means" title="What this means">i</span>';}
+let infoPop=null;
+function openInfo(icon){const d=INFO[icon.getAttribute("data-info")];if(!d)return;if(!infoPop){infoPop=document.createElement("div");infoPop.className="info-pop";document.body.appendChild(infoPop);}const st=typeof d.status==="function"?d.status():d.status;infoPop.innerHTML='<div class="ip-title">'+esc(d.title)+'</div><div class="ip-row"><b>What it means:</b> '+esc(d.what)+'</div><div class="ip-row"><b>How it\'s worked out:</b> '+esc(d.formula)+'</div><div class="ip-status">'+esc(st)+'</div>';infoPop.style.display="block";infoPop._anchor=icon;const r=icon.getBoundingClientRect(),pw=infoPop.offsetWidth||280;let left=r.left;if(left+pw>window.innerWidth-10)left=window.innerWidth-10-pw;infoPop.style.left=Math.max(10,left)+"px";infoPop.style.top=(r.bottom+6)+"px";}
+function closeInfo(){if(infoPop){infoPop.style.display="none";infoPop._anchor=null;}}
+document.addEventListener("click",e=>{const icon=e.target.closest(".info-i");if(icon){e.stopPropagation();if(infoPop&&infoPop._anchor===icon&&infoPop.style.display==="block")closeInfo();else openInfo(icon);return;}if(!e.target.closest(".info-pop"))closeInfo();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeInfo();if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("info-i")){e.preventDefault();openInfo(e.target);}});
+window.addEventListener("scroll",closeInfo,true);
 
 // ================= ADD ENTRY =================
-const ACT_FORM=[
-  {key:"plannedDate",label:"Planned Date",type:"date",required:true},
-  {key:"employeeName",label:"Employee Name",type:"text",required:true},
-  {key:"designation",label:"Designation",type:"select",opts:()=>distinctCsv("Designation")},
-  {key:"zone",label:"Zone",type:"text",list:"dl-zones"},
-  {key:"region",label:"Region",type:"text",list:"dl-regions"},
-  {key:"territory",label:"Territory",type:"text",list:"dl-territories"},
-  {key:"district",label:"District",type:"text",list:"dl-districts",required:true},
-  {key:"activity",label:"Activity",type:"select",opts:()=>distinctCsv("Activity")},
-  {key:"activityType",label:"Activity Type",type:"select",opts:()=>distinctCsv("Activity Type")},
-  {key:"productCategory",label:"Product Category",type:"select",opts:()=>distinctCsv("Product Category")},
-  {key:"product",label:"Product",type:"text",list:"dl-products"},
-  {key:"status",label:"Status",type:"select",opts:()=>distinctCsv("Status")},
-  {key:"achieved",label:"Achieved",type:"select",opts:()=>["Yes","No"]},
+const ACT_MAIN=[
+  {k:"typeOfActivity",label:"Type of Activity",type:"select",opts:()=>["Digital","OOH","Field"],required:true},
+  {k:"activityName",label:"Activities (activity name)",type:"text",list:"dl-names",required:true},
+  {k:"product",label:"Product",type:"text",list:"dl-products"},
+  {k:"date",label:"Date",type:"date",required:true},
+  {k:"region",label:"Region / District",type:"text",list:"dl-districts",required:true},
+  {k:"reach",label:"Farmer Reach",type:"number"},
+  {k:"cost",label:"Cost (₹)",type:"number"},
 ];
-const MKT_FORM=[
-  {key:"channelType",label:"Channel Type",type:"select",opts:()=>CHANNELS,required:true},
-  {key:"product",label:"Product (optional)",type:"text",list:"dl-products"},
-  {key:"district",label:"District",type:"text",list:"dl-districts",required:true},
-  {key:"month",label:"Month",type:"month",required:true},
-  {key:"target",label:"Target",type:"number"},
-  {key:"actual",label:"Actual",type:"number"},
-  {key:"cost",label:"Cost (₹)",type:"number"},
-  {key:"notes",label:"Notes",type:"textarea",full:true},
+const ACT_EXTRA=[
+  {k:"employee",label:"Employee",type:"text"},
+  {k:"designation",label:"Designation",type:"select",opts:()=>distinctU(UF.designation)},
+  {k:"zone",label:"Zone",type:"text",list:"dl-zones"},
+  {k:"territory",label:"Territory",type:"text",list:"dl-territories"},
+  {k:"status",label:"Status",type:"select",opts:()=>["Completed","Expired","Rejected"]},
+  {k:"achieved",label:"Achieved",type:"select",opts:()=>["Yes","No"]},
+  {k:"category",label:"Product Category",type:"select",opts:()=>distinctU(UF.category)},
 ];
 const SALES_FORM=[
-  {key:"district",label:"District",type:"text",list:"dl-districts",required:true},
-  {key:"month",label:"Month",type:"month",required:true},
-  {key:"product",label:"Product",type:"text",list:"dl-products",required:true},
-  {key:"salesValue",label:"Sales Value (₹)",type:"number",required:true},
-  {key:"unitsSold",label:"Units Sold",type:"number",required:true},
+  {k:"district",label:"District",type:"text",list:"dl-districts",required:true},
+  {k:"month",label:"Month",type:"month",required:true},
+  {k:"product",label:"Product",type:"text",list:"dl-products",required:true},
+  {k:"salesValue",label:"Sales Value (₹)",type:"number",required:true},
+  {k:"unitsSold",label:"Units Sold",type:"number",required:true},
 ];
-const FORMS={activity:{title:"Add Activity",fields:ACT_FORM},marketing:{title:"Add Marketing Channel entry",fields:MKT_FORM},sales:{title:"Add Sales entry",fields:SALES_FORM}};
-const NUMERIC=new Set(["target","actual","cost","salesValue","unitsSold"]);
+const NUMERIC=new Set(["reach","cost","salesValue","unitsSold"]);
 let currentForm=null;
-
 function openAdd(){document.getElementById("addOverlay").classList.add("open");showChooser();}
 function closeAdd(){document.getElementById("addOverlay").classList.remove("open");}
 function showChooser(){
-  currentForm=null;
-  document.getElementById("addTitle").textContent="Add New Entry";
-  document.getElementById("addFoot").style.display="none";
-  document.getElementById("addBody").innerHTML=
-    '<p class="hint" style="margin-top:0">What type of entry is this?</p><div class="choose">'+
-    '<button data-t="activity"><b>Activity</b><span>A field activity — same details as the Activities table.</span></button>'+
-    '<button data-t="marketing"><b>Marketing Channel</b><span>A channel campaign — channel type, district, month, target, actual, cost, notes.</span></button>'+
-    '<button data-t="sales"><b>Sales</b><span>A sales record — district, month, product, sales value, units sold.</span></button></div>';
+  currentForm=null;document.getElementById("addTitle").textContent="Add New Entry";document.getElementById("addFoot").style.display="none";
+  document.getElementById("addBody").innerHTML='<p class="hint" style="margin-top:0">What type of entry is this?</p><div class="choose">'+
+    '<button data-t="activity"><b>Activity</b><span>Any activity — Digital, OOH or Field (channels + field work are all activities now).</span></button>'+
+    '<button data-t="sales"><b>Sales</b><span>A sales record — district, month, product, sales value, units.</span></button></div>';
   document.querySelectorAll("#addBody .choose button").forEach(b=>b.addEventListener("click",()=>showForm(b.getAttribute("data-t"))));
 }
-function showForm(type){
-  currentForm=type;const spec=FORMS[type];
-  document.getElementById("addTitle").textContent=spec.title;
-  const body=document.getElementById("addBody");
-  body.innerHTML='<div class="formgrid">'+spec.fields.map(f=>{
-    const req=f.required?' <span class="req">*</span>':'';
-    const cls=f.full||f.type==="textarea"?' full':'';
-    let ctrl;
-    if(f.type==="select"){ctrl='<select data-k="'+f.key+'"><option value="">— select —</option>'+f.opts().map(o=>'<option>'+esc(o)+'</option>').join("")+'</select>';}
-    else if(f.type==="textarea"){ctrl='<textarea data-k="'+f.key+'" placeholder="optional"></textarea>';}
-    else{const list=f.list?' list="'+f.list+'"':'';const step=f.type==="number"?' step="any"':'';ctrl='<input data-k="'+f.key+'" type="'+f.type+'"'+list+step+'>';}
-    return '<div class="fld'+cls+'"><label>'+esc(f.label)+req+'</label>'+ctrl+'</div>';
-  }).join("")+'</div>';
-  document.getElementById("addFoot").style.display="flex";
-  setFormMsg("");
+function fieldHtml(f){
+  const req=f.required?' <span class="req">*</span>':"";const cls=f.type==="textarea"?" full":"";let ctrl;
+  if(f.type==="select")ctrl='<select data-k="'+f.k+'"><option value="">— select —</option>'+f.opts().map(o=>'<option>'+esc(o)+'</option>').join("")+'</select>';
+  else if(f.type==="textarea")ctrl='<textarea data-k="'+f.k+'"></textarea>';
+  else{const list=f.list?' list="'+f.list+'"':"";const step=f.type==="number"?' step="any"':"";ctrl='<input data-k="'+f.k+'" type="'+f.type+'"'+list+step+'>';}
+  return '<div class="fld'+cls+'"><label>'+esc(f.label)+req+'</label>'+ctrl+'</div>';
 }
+function showForm(type){
+  currentForm=type;document.getElementById("addTitle").textContent=type==="activity"?"Add Activity":"Add Sales entry";
+  const body=document.getElementById("addBody");
+  if(type==="activity"){
+    body.innerHTML='<div class="formgrid">'+ACT_MAIN.map(fieldHtml).join("")+'<div class="form-divider">Optional extra details (leave blank if not relevant)</div>'+ACT_EXTRA.map(fieldHtml).join("")+'</div>';
+  }else{
+    body.innerHTML='<div class="formgrid">'+SALES_FORM.map(fieldHtml).join("")+'</div>';
+  }
+  document.getElementById("addFoot").style.display="flex";setFormMsg("");
+}
+function currentFields(){return currentForm==="activity"?ACT_MAIN.concat(ACT_EXTRA):SALES_FORM;}
 function setFormMsg(t,cls){const m=document.getElementById("formMsg");m.textContent=t;m.className="form-msg"+(cls?" "+cls:"");}
 function collectForm(){
-  const spec=FORMS[currentForm];const data={type:currentForm};const missing=[];
-  spec.fields.forEach(f=>{
-    const el=document.querySelector('#addBody [data-k="'+f.key+'"]');
-    let v=el?el.value.trim():"";
-    if(f.required&&!v)missing.push(f.label);
-    if(NUMERIC.has(f.key))v=v===""?null:num(v);
-    data[f.key]=v;
-  });
+  const data={type:currentForm};const missing=[];
+  currentFields().forEach(f=>{const el=document.querySelector('#addBody [data-k="'+f.k+'"]');let v=el?el.value.trim():"";if(f.required&&!v)missing.push(f.label);if(NUMERIC.has(f.k))v=v===""?null:num(v);data[f.k]=v;});
   return {data,missing};
 }
 async function submitForm(){
@@ -848,382 +675,59 @@ async function submitForm(){
     const r=await fetch("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
     const j=await r.json();
     if(!r.ok||!j.ok){setFormMsg(j.error||"Could not save.","err");btn.disabled=false;return;}
-    // update in-memory + re-render immediately (also persisted for next refresh)
-    manual[j.entry.type].unshift(j.entry);
-    if(j.entry.type==="activity")rebuildActRows();
-    dbConfigured=true;
-    refreshAfterAdd();
-    toast("Saved! Entry added.");
-    closeAdd();
+    manual[j.entry.type].unshift(j.entry);dbConfigured=true;buildUnified();refreshAll();toast("Saved!");closeAdd();
   }catch(e){setFormMsg("Network error: "+e.message,"err");}
   btn.disabled=false;
 }
-function refreshAfterAdd(){
-  updateSubtitle();updateRecent();computeGlobalStats();
-  // rebuild dropdown option universes may have changed; simplest is re-apply
-  applyAct();applyMkt();renderSummary();renderEfficiency();
-}
+function refreshAll(){updateSubtitle();refreshDatalists();updateRecent();applyAct();renderOverview();renderEfficiency();}
 
-// ================= RECENT LIST =================
+// ================= RECENT =================
 function updateRecent(){
-  const all=[...manual.activity,...manual.marketing,...manual.sales].sort((a,b)=>(b.id||0)-(a.id||0));
+  const acts=[...manual.activity,...manual.marketing].map(e=>({...e,_t:"activity"}));
+  const all=[...acts,...manual.sales.map(e=>({...e,_t:"sales"}))].sort((a,b)=>(b.id||0)-(a.id||0));
   document.getElementById("recentCount").textContent=all.length;
   const list=document.getElementById("recentList");
-  if(!all.length){list.innerHTML='<div class="empty" style="padding:24px">Nothing added yet. Use <b>+ Add New Entry</b> to add your first entry.</div>';return;}
-  list.innerHTML=all.slice(0,50).map(e=>{
+  if(!all.length){list.innerHTML='<div class="empty" style="padding:24px">Nothing added yet.</div>';return;}
+  list.innerHTML=all.slice(0,60).map(e=>{
     let summary="",meta="";
-    if(e.type==="activity"){summary=(e.activity||"Activity")+" — "+(e.employeeName||"");meta=[e.district,e.plannedDate].filter(Boolean).join(" · ");}
-    else if(e.type==="marketing"){summary=(e.channelType||"Channel")+" — "+(e.district||"");meta=[e.month,e.actual!=null?"actual "+nf.format(num(e.actual)):"",e.cost!=null?"₹"+nf.format(num(e.cost)):""].filter(Boolean).join(" · ");}
-    else{summary=(e.product||"Product")+" — "+(e.district||"");meta=[e.month,e.salesValue!=null?"₹"+nf.format(num(e.salesValue)):"",e.unitsSold!=null?nf.format(num(e.unitsSold))+" units":""].filter(Boolean).join(" · ");}
-    return '<div class="recent-item"><span class="rtag '+e.type+'">'+e.type+'</span>'+
-      '<div class="rmain"><div class="rsummary">'+esc(summary)+'</div><div class="rmeta">'+esc(meta)+' · added '+esc(fmtDateTime(e.created_at))+'</div></div></div>';
+    if(e._t==="sales"){summary=(e.product||"Product")+" — "+(e.district||"");meta=[e.month,e.salesValue!=null?"₹"+nf.format(num(e.salesValue)):"",e.unitsSold!=null?nf.format(num(e.unitsSold))+" units":""].filter(Boolean).join(" · ");}
+    else{const name=e.activityName||e.activity||e.channelType||"Activity";const reg=e.region||e.district||"";const t=e.typeOfActivity||(e.channelType?channelToType(e.channelType):"Field");summary=name+" — "+reg;meta=[t,e.date||e.plannedDate||(e.month||""),e.cost!=null&&e.cost!==""?"₹"+nf.format(num(e.cost)):""].filter(Boolean).join(" · ");}
+    return '<div class="recent-item"><span class="rtag '+e._t+'">'+e._t+'</span><div class="rmain"><div class="rsummary">'+esc(summary)+'</div><div class="rmeta">'+esc(meta)+' · added '+esc(fmtDateTime(e.created_at))+'</div></div></div>';
   }).join("");
 }
+function fmtDateTime(s){if(!s)return "";const d=new Date(s);if(isNaN(d))return String(s).slice(0,10);return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
 
-// ================= SUMMARY PAGE =================
-function buildSummaryControls(){
-  const sel=document.getElementById("sumDim");
-  sel.value=sumDim;
-  sel.addEventListener("change",()=>{sumDim=sel.value;sumValue="";sumFrom="";sumTo="";rebuildValueControl();renderSummary();});
-  rebuildValueControl();
-}
-function rebuildValueControl(){
-  const wrap=document.getElementById("sumValueWrap");wrap.innerHTML="";
-  if(sumDim==="date"){
-    wrap.innerHTML='<label>Date range</label><div class="daterow">'+
-      '<div><div class="sub">From</div><input type="date" id="sumFrom" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div>'+
-      '<div><div class="sub">To</div><input type="date" id="sumTo" min="'+DATE_MIN+'" max="'+DATE_MAX+'"></div></div>';
-    const a=wrap.querySelector("#sumFrom"),b=wrap.querySelector("#sumTo");a.value=sumFrom;b.value=sumTo;
-    a.addEventListener("change",e=>{sumFrom=e.target.value;renderSummary();});
-    b.addEventListener("change",e=>{sumTo=e.target.value;renderSummary();});
-    return;
-  }
-  const label={product:"Product",district:"District",channelType:"Marketing Channel Type"}[sumDim];
-  const lab=document.createElement("label");lab.textContent=label;wrap.appendChild(lab);
-  const dd=makeDropdown({label,getCounts:q=>summaryValueCounts(sumDim,q),onChange:v=>{sumValue=v;renderSummary();}});
-  wrap.appendChild(dd.el);
-}
-function summaryValueCounts(dim,q){
-  const m=new Map();
-  if(dim==="channelType"){
-    CHANNELS.forEach(v=>{if(!q||v.toLowerCase().includes(q))m.set(v,0);});
-    for(const e of manual.marketing){const v=e.channelType;if(!v)continue;if(q&&!v.toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
-    return m;
-  }
-  const ci=dim==="product"?IDX.Product:IDX.District;
-  for(const r of ACT_ROWS){const v=r[ci];if(!v)continue;if(q&&!v.toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
-  (dim==="product"?productUniverse():districtUniverse()).forEach(v=>{if((!q||v.toLowerCase().includes(q))&&!m.has(v))m.set(v,0);});
-  return m;
-}
-function monthInRange(month,from,to){const f=from?from.slice(0,7):"",t=to?to.slice(0,7):"";if(f&&month<f)return false;if(t&&month>t)return false;return true;}
-function countBy(rows,ci){const m=new Map();for(const r of rows){const v=r[ci];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
-function countByKey(entries,key){const m=new Map();for(const e of entries){const v=e[key];if(v)m.set(v,(m.get(v)||0)+1);}return m;}
-function tile(n,l,sub,info){return '<div class="tile"><div class="n">'+n+'</div><div class="l">'+esc(l)+(info?infoIcon(info):"")+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';}
-function tiles(a){return '<div class="tiles">'+a.map(x=>tile(x.n,x.l,x.sub,x.info)).join("")+'</div>';}
-function ordinal(n){const v=n%100,s=["th","st","nd","rd"];return n+(s[(v-20)%10]||s[v]||s[0]);}
-
-// ---- overall (all-activities) baselines for comparison ----
-let GLOBAL={total:0,completed:0,compRate:0,byDistrict:new Map(),byProduct:new Map()};
-function computeGlobalStats(){
-  const si=IDX.Status,di=IDX.District,pi=IDX.Product;
-  const g={total:0,completed:0,byDistrict:new Map(),byProduct:new Map()};
-  for(const r of ACT_ROWS){
-    g.total++;const done=r[si]==="Completed";if(done)g.completed++;
-    const d=r[di];if(d){const o=g.byDistrict.get(d)||{count:0};o.count++;g.byDistrict.set(d,o);}
-    const p=r[pi];if(p){const o=g.byProduct.get(p)||{count:0};o.count++;g.byProduct.set(p,o);}
-  }
-  g.compRate=g.total?g.completed/g.total:0;GLOBAL=g;
-}
-function rankInfo(sel){
-  const map=sel.dim==="district"?GLOBAL.byDistrict:GLOBAL.byProduct;
-  const mine=(map.get(sel.value)||{count:0}).count;
-  let rank=1;for(const [,o] of map)if(o.count>mine)rank++;
-  return {rank,total:map.size,count:mine};
-}
-function generateInsight(sel){
-  const rows=summaryActivities(sel);
-  const mkt=summaryMarketing(sel),sales=summarySales(sel);
-  const hasMkt=mkt.length>0,hasSales=sales&&sales.length>0;
-  const parts=[];
-  if(rows===null){ // channel type: activities/sales not linked
-    if(hasMkt){let cost=0;for(const e of mkt)cost+=num(e.cost);
-      parts.push(esc(sel.value)+" has "+nf.format(mkt.length)+" marketing "+(mkt.length===1?"campaign":"campaigns")+" logged"+(cost?" costing ₹"+nf.format(cost):"")+".");}
-    else parts.push("No marketing campaigns have been logged for "+esc(sel.value)+" yet.");
-    parts.push("Field activities and sales aren't tracked by channel type.");
-    return parts.join(" ");
-  }
-  const subject=sel.dim==="date"?"This date range":esc(sel.value);
-  if(!rows.length){
-    parts.push("No field activities are recorded for "+(sel.dim==="date"?"this date range":subject)+".");
-  }else{
-    const n=rows.length;let completed=0;for(const r of rows)if(r[IDX.Status]==="Completed")completed++;
-    const rate=Math.round(completed/n*100),g=Math.round(GLOBAL.compRate*100),diff=rate-g;
-    let rankTxt="";
-    if(sel.dim==="district"||sel.dim==="product"){const ri=rankInfo(sel);rankTxt=" ("+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products")+" by volume)";}
-    const cmp=Math.abs(diff)<2?"about the "+g+"% average":(diff>0?"above the "+g+"% average":"below the "+g+"% average");
-    parts.push(subject+" had "+nf.format(n)+" field "+(n===1?"activity":"activities")+rankTxt+", with a completion rate of "+rate+"% — "+cmp+".");
-  }
-  const miss=[];if(!hasMkt)miss.push("marketing channel");if(!hasSales)miss.push("sales");
-  if(miss.length)parts.push("No "+miss.join(" or ")+" data has been added for "+(sel.dim==="date"?"it":"this "+sel.dim)+" yet.");
-  else parts.push("Marketing and sales figures are shown below too.");
-  return parts.join(" ");
-}
-function hbars(counts,o){
-  o=o||{};const color=o.color||"var(--brand)",limit=o.limit||5,prefix=o.prefix||"",fmt=o.fmt||nf.format;
-  const list=[...counts.entries()].filter(([k])=>k).sort((a,b)=>b[1]-a[1]).slice(0,limit);
-  if(!list.length)return '<div class="sum-empty">No data.</div>';
-  const max=list[0][1]||1;
-  return list.map(([k,v])=>{const w=Math.max(4,Math.round(v/max*100));
-    return '<div class="hbar"><div class="lbl" title="'+esc(k)+'">'+esc(k)+'</div><div class="track"><div class="fill" style="width:'+w+'%;background:'+color+'"></div></div><div class="num">'+prefix+fmt(v)+'</div></div>';}).join("");
-}
-function fmtNiceDate(s){if(!s)return "";const d=new Date(s+"T00:00:00");if(isNaN(d))return s;return d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});}
-
-function summaryActivities(sel){
-  if(sel.dim==="channelType")return null;
-  const pi=IDX.Product,di=IDX.District,dt=IDX["Planned Date"];
-  return ACT_ROWS.filter(r=>{
-    if(sel.dim==="product")return r[pi]===sel.value;
-    if(sel.dim==="district")return r[di]===sel.value;
-    const d=r[dt];return d&&(!sel.from||d>=sel.from)&&(!sel.to||d<=sel.to);
-  });
-}
-function summaryMarketing(sel){
-  return manual.marketing.filter(e=>{
-    if(sel.dim==="product")return (e.product||"")===sel.value;
-    if(sel.dim==="district")return (e.district||"")===sel.value;
-    if(sel.dim==="channelType")return (e.channelType||"")===sel.value;
-    return e.month&&monthInRange(e.month,sel.from,sel.to);
-  });
-}
-function summarySales(sel){
-  if(sel.dim==="channelType")return null;
-  return manual.sales.filter(e=>{
-    if(sel.dim==="product")return (e.product||"")===sel.value;
-    if(sel.dim==="district")return (e.district||"")===sel.value;
-    return e.month&&monthInRange(e.month,sel.from,sel.to);
-  });
-}
-function sectionActivities(sel){
-  const rows=summaryActivities(sel);let inner;
-  if(rows===null){inner='<div class="sum-empty">Activities aren\'t linked to a marketing channel type, so there\'s nothing to summarize here.</div>';}
-  else if(!rows.length){inner='<div class="sum-empty">No activities found for this selection.</div>';}
-  else{
-    const n=rows.length,si=IDX.Status,ei=IDX["Employee Name"];let completed=0;const emps=new Set();
-    for(const r of rows){if(r[si]==="Completed")completed++;if(r[ei])emps.add(r[ei]);}
-    const rate=n?Math.round(completed/n*100):0,g=Math.round(GLOBAL.compRate*100),diff=rate-g;
-    let totalSub;
-    if(sel.dim==="district"||sel.dim==="product"){const ri=rankInfo(sel);totalSub="ranks "+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products");}
-    else{totalSub=(GLOBAL.total?Math.round(n/GLOBAL.total*100):0)+"% of all activities";}
-    const cls=Math.abs(diff)<2?"":(diff>0?"up":"down"),arw=Math.abs(diff)<2?"":(diff>0?"▲ ":"▼ ");
-    const rateSub='<span class="'+cls+'">'+arw+"overall avg "+g+"%</span>";
-    const t=tiles([{n:nf.format(n),l:"Total activities",sub:totalSub,info:"sum_rank"},{n:(n?rate+"%":"–"),l:"Completion rate",sub:rateSub,info:"sum_completion"},{n:nf.format(emps.size),l:"Employees involved",info:"act_employees"}]);
-    const b1=hbars(countBy(rows,IDX.Activity),{color:"var(--brand)"});
-    let b2t,b2;
-    if(sel.dim==="district"){b2t="Top products";b2=hbars(countBy(rows,IDX.Product),{color:"var(--brand)"});}
-    else{b2t="Top districts involved";b2=hbars(countBy(rows,IDX.District),{color:"var(--brand)"});}
-    inner=t+'<div class="breakdowns"><div><div class="subhead">Top activity types</div>'+b1+'</div><div><div class="subhead">'+b2t+'</div>'+b2+'</div></div>';
-  }
-  return '<div class="sum-section"><h3><span class="sdot act"></span>Activities summary</h3><div class="sdesc">Field activities connected to your selection (CSV + manually added).</div>'+inner+'</div>';
-}
-function sectionMarketing(sel){
-  const subs=summaryMarketing(sel);let inner;
-  if(!subs.length){
-    const extra=sel.dim==="product"?" No channel campaigns are tagged with this product yet — this section fills in automatically once they are.":"";
-    inner='<div class="sum-empty">No matching marketing channel entries yet.'+extra+'</div>';
-  }else{
-    const n=subs.length;let cost=0,reach=0;for(const e of subs){cost+=num(e.cost);reach+=num(e.actual);}
-    const cpr=reach>0?"₹"+nf.format(Math.round(cost/reach*100)/100):"–";
-    const t=tiles([{n:nf.format(n),l:"Total entries",info:"mkt_entries"},{n:"₹"+nf.format(cost),l:"Total cost",info:"mkt_cost"},{n:nf.format(reach),l:"Est. reach",info:"sum_reach"},{n:cpr,l:"Cost per reach",info:"sum_cost_per_reach"}]);
-    inner=t+'<div><div class="subhead">Channel type breakdown (entries)'+infoIcon("sum_channel_breakdown")+'</div>'+hbars(countByKey(subs,"channelType"),{color:"var(--good)",limit:8})+'</div>';
-  }
-  return '<div class="sum-section"><h3><span class="sdot mkt"></span>Marketing Channel summary</h3><div class="sdesc">Channel campaigns connected to your selection. Est. reach = total of the “Actual” figures.</div>'+inner+'</div>';
-}
-function sectionSales(sel){
-  const subs=summarySales(sel);let inner;
-  if(subs===null){inner='<div class="sum-empty">Sales aren\'t linked to a marketing channel type.</div>';}
-  else if(!subs.length){inner='<div class="sum-empty">Not enough data yet.</div>';}
-  else{
-    let val=0,units=0;for(const e of subs){val+=num(e.salesValue);units+=num(e.unitsSold);}
-    inner=tiles([{n:"₹"+nf.format(val),l:"Total sales value",info:"sum_sales_trend"},{n:nf.format(units),l:"Total units",info:"sum_sales_trend"}])+
-      '<div class="subhead">Sales trend over time'+infoIcon("sum_sales_trend")+'</div><div id="sumSalesChart"></div>';
-  }
-  return '<div class="sum-section"><h3><span class="sdot sal"></span>Sales summary</h3><div class="sdesc">Sales connected to your selection.</div>'+inner+'</div>';
-}
-function renderSummary(){
-  const body=document.getElementById("sumBody");if(!body)return;
-  const hasSel=sumDim==="date"?(sumFrom&&sumTo):!!sumValue;
-  if(!hasSel){
-    const what={product:"a product",district:"a district",channelType:"a marketing channel type",date:"a start and end date"}[sumDim];
-    body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';return;
-  }
-  const sel={dim:sumDim,value:sumValue,from:sumFrom,to:sumTo};
-  const dimLabel={product:"Product",district:"District",channelType:"Marketing Channel Type",date:"Date Range"}[sumDim];
-  const valLabel=sumDim==="date"?(fmtNiceDate(sumFrom)+" → "+fmtNiceDate(sumTo)):sumValue;
-  body.innerHTML='<div class="banner">Showing everything connected to <b>'+esc(dimLabel)+': '+esc(valLabel)+'</b></div>'+
-    '<div class="insight"><span class="ico">💡</span><span>'+generateInsight(sel)+'</span></div>'+
-    sectionActivities(sel)+sectionMarketing(sel)+sectionSales(sel);
-  const host=document.getElementById("sumSalesChart");
-  if(host){
-    const subs=summarySales(sel),byMonth=new Map();
-    for(const e of subs){if(e.month)byMonth.set(e.month,(byMonth.get(e.month)||0)+num(e.salesValue));}
-    host.appendChild(lineChart({title:"Sales value over time",sub:"Sum of Sales Value per month",
-      months:[...byMonth.keys()].sort(),valueByMonth:byMonth,color:"var(--chart-aqua)",prefix:"₹",emptyMsg:"Not enough data yet."}));
-  }
-}
-
-// ================= CHANNEL EFFICIENCY =================
-const EFF_MIN_COMBOS=5;
-// Match Marketing Channel cost with Sales value by district + month, per channel+district combo.
-function computeEfficiency(){
-  const salesDM=new Map();       // "district|month" -> total sales value
-  for(const e of manual.sales){const v=num(e.salesValue);if(!e.district||!e.month||v<=0)continue;const k=e.district+"|"+e.month;salesDM.set(k,(salesDM.get(k)||0)+v);}
-  const costCDM=new Map();        // "channel|district|month" -> total cost
-  for(const e of manual.marketing){const c=num(e.cost);if(!e.channelType||!e.district||!e.month||c<=0)continue;const k=e.channelType+"|"+e.district+"|"+e.month;costCDM.set(k,(costCDM.get(k)||0)+c);}
-  const combos=new Map();         // "channel|district" -> {channel,district,cost,sales}
-  for(const [k,cost] of costCDM){
-    const i1=k.indexOf("|"),i2=k.indexOf("|",i1+1);
-    const ch=k.slice(0,i1),dist=k.slice(i1+1,i2),month=k.slice(i2+1);
-    const sales=salesDM.get(dist+"|"+month);
-    if(sales==null)continue;       // needs BOTH cost and sales in the same district+month
-    const ck=ch+"|"+dist;const o=combos.get(ck)||{channel:ch,district:dist,cost:0,sales:0};
-    o.cost+=cost;o.sales+=sales;combos.set(ck,o);
-  }
-  const list=[...combos.values()].filter(o=>o.cost>0&&o.sales>0).map(o=>({...o,spr:o.sales/o.cost}));
-  const count=list.length;
-  const avg=count?list.reduce((s,o)=>s+o.spr,0)/count:0;
-  list.forEach(o=>{o.index=avg?Math.round(o.spr/avg*100):100;});
-  list.sort((a,b)=>b.spr-a.spr);
-  return {list,count,avg};
-}
-function renderEfficiency(){
-  const host=document.getElementById("effBody");if(!host)return;
-  const {list,count,avg}=computeEfficiency();
-  const status='<div class="banner">This analysis matches Marketing Channel <b>cost</b> with <b>Sales value</b> for the same district and month. It needs at least <b>'+EFF_MIN_COMBOS+'</b> channel + district combinations that have both. Currently: <b>'+count+' of '+EFF_MIN_COMBOS+'</b>.</div>';
-  if(count<EFF_MIN_COMBOS){
-    host.innerHTML=status+'<div class="sum-section"><h3>Spend vs Sales analysis</h3>'+
-      '<div style="margin:-4px 0 12px;color:var(--muted);font-size:13px">What each one means: Sales per Rupee Spent'+infoIcon("eff_spr")+' · Channel Efficiency Index'+infoIcon("eff_index")+' · Opportunity Matrix'+infoIcon("eff_matrix")+'</div>'+
-      '<div class="sum-empty" style="padding:40px">Not enough data yet.<br><br>Sales per Rupee Spent, the Channel Efficiency Index, and the Opportunity Matrix all compare marketing spend against sales for the same district and month. They turn on automatically once at least '+EFF_MIN_COMBOS+' channel + district combinations have both cost and sales recorded.<br><br><b>'+count+' of '+EFF_MIN_COMBOS+'</b> combinations available so far.</div></div>';
-    return;
-  }
-  const rows=list.map((o,i)=>{
-    const cls=o.index>=100?"up":"down",arw=o.index>=100?"▲":"▼";
-    return '<tr><td>'+(i+1)+'</td><td>'+esc(o.channel)+' — '+esc(o.district)+'</td><td class="num">₹'+o.spr.toFixed(2)+'</td>'+
-      '<td class="num idx '+cls+'">'+arw+' '+o.index+'</td><td class="num">₹'+nf.format(Math.round(o.sales))+'</td></tr>';
-  }).join("");
-  const listCard='<div class="sum-section"><h3>Sales per rupee spent &amp; efficiency</h3>'+
-    '<div class="sdesc">Sales value ÷ marketing cost for each channel + district (matched by month). Efficiency: 100 = the average of ₹'+avg.toFixed(2)+' of sales per ₹1 spent; above 100 is better than average.</div>'+
-    '<div style="overflow-x:auto"><table class="eff-table"><thead><tr><th>#</th><th>Channel — District</th><th>Sales per ₹1'+infoIcon("eff_spr")+'</th><th>Efficiency'+infoIcon("eff_index")+'</th><th>Total sales</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-  // opportunity matrix: efficiency (vs 100) x total sales (vs median)
-  const salesArr=list.map(o=>o.sales).sort((a,b)=>a-b),m=salesArr.length;
-  const median=m%2?salesArr[(m-1)/2]:(salesArr[m/2-1]+salesArr[m/2])/2;
-  const g={scale:[],invest:[],optimise:[],reduce:[]};
-  list.forEach(o=>{const he=o.index>=100,hs=o.sales>=median;g[he?(hs?"scale":"invest"):(hs?"optimise":"reduce")].push(o);});
-  const boxes=[
-    {k:"scale",t:"Scale",r:"High efficiency · High sales",d:"Working well and big — do more of these."},
-    {k:"invest",t:"Invest",r:"High efficiency · Low sales",d:"Efficient but small — worth growing."},
-    {k:"optimise",t:"Optimise",r:"Low efficiency · High sales",d:"Big but wasteful — tighten the spend."},
-    {k:"reduce",t:"Reduce",r:"Low efficiency · Low sales",d:"Weak on both — consider cutting back."},
-  ];
-  const matrix='<div class="sum-section"><h3>Opportunity matrix'+infoIcon("eff_matrix")+'</h3>'+
-    '<div class="sdesc">Each channel + district placed by efficiency (vs the 100 average) and total sales (vs the middle value).</div><div class="matrix">'+
-    boxes.map(b=>'<div class="mbox '+b.k+'"><h4>'+b.t+'</h4><div class="mrule">'+b.r+'</div><div class="mdesc">'+b.d+'</div>'+
-      (g[b.k].length?g[b.k].map(o=>'<span class="chip">'+esc(o.channel)+' — '+esc(o.district)+'</span>').join(""):'<span class="empty-mini">None</span>')+'</div>').join("")+'</div></div>';
-  host.innerHTML=status+listCard+matrix;
-}
-
-// ================= INLINE METRIC EXPLANATIONS =================
-function realOrWait(has,realTxt,waitTxt){return has?realTxt:waitTxt;}
-function effStatus(){const {count}=computeEfficiency();
-  return count>=EFF_MIN_COMBOS
-    ? "Showing real numbers — "+count+" channel + district combinations qualify."
-    : "Waiting on data — needs both cost and sales in the same district + month for at least "+EFF_MIN_COMBOS+" combinations (currently "+count+" of "+EFF_MIN_COMBOS+").";}
-const ACT_STATUS="Showing real numbers — based on the activity records (from the CSV files, plus any you add).";
-function mktStatus(){return realOrWait(manual.marketing.length,"Showing real numbers from your marketing channel entries.","Waiting on data — no marketing channel entries have been added yet.");}
-function salesStatus(){return realOrWait(manual.sales.length,"Showing real numbers from your sales entries.","Waiting on data — no sales entries have been added yet.");}
-const INFO={
-  act_results:{title:"Results",what:"How many activity records match the filters you've set.",formula:"A count of the matching rows.",status:()=>ACT_STATUS},
-  act_completion:{title:"Completed",what:"Of the activities shown, how many were marked Completed — and what share that is.",formula:"Completed activities ÷ all shown activities × 100.",status:()=>ACT_STATUS},
-  act_achieved:{title:"Achieved",what:"Of the activities shown, how many were marked Achieved = Yes — and what share that is.",formula:"Achieved (Yes) ÷ all shown activities × 100.",status:()=>ACT_STATUS},
-  act_employees:{title:"Employees",what:"How many different employees appear in the activities shown.",formula:"A count of the unique employee names.",status:()=>ACT_STATUS},
-  mkt_entries:{title:"Channel entries",what:"How many marketing channel entries match the filters.",formula:"A count of the matching entries.",status:mktStatus},
-  mkt_actual:{title:"Total actual",what:"The Actual figures from the shown entries, added together.",formula:"Sum of the Actual field across the shown entries.",status:mktStatus},
-  mkt_target:{title:"Total target",what:"The Target figures from the shown entries, added together.",formula:"Sum of the Target field across the shown entries.",status:mktStatus},
-  mkt_cost:{title:"Total cost",what:"The Cost figures from the shown entries, added together.",formula:"Sum of the Cost field across the shown entries.",status:mktStatus},
-  mkt_compare:{title:"Channel activity vs sales over time",what:"For the chosen district, two lines month by month: how much channel activity happened, next to how much was sold — so you can eyeball them together.",formula:"Channel line = total of Actual per month. Sales line = total of Sales Value per month.",status:()=>realOrWait(manual.sales.length,"Both lines show real numbers.","The channel line uses your marketing entries; the sales line is waiting on sales data.")},
-  sum_rank:{title:"Total activities & rank",what:"How many activities involve your selection, and where that places it among all districts (or products) by number of activities.",formula:"Rank = its position when everything is sorted by activity count, most first (e.g. 56th of 743).",status:()=>ACT_STATUS},
-  sum_completion:{title:"Completion rate vs average",what:"The completion rate for your selection shown next to the average across all activities, so you can see if it's above or below.",formula:"Selection: Completed ÷ its activities × 100. Average: Completed ÷ all activities × 100.",status:()=>ACT_STATUS},
-  sum_reach:{title:"Estimated reach",what:"A rough estimate of how many were reached by the matching channel campaigns.",formula:"Sum of the Actual figures across the matching marketing entries.",status:mktStatus},
-  sum_cost_per_reach:{title:"Cost per reach",what:"Roughly how much marketing spend it took to reach one person/unit.",formula:"Total cost ÷ estimated reach (reach = total of the Actual figures).",status:mktStatus},
-  sum_channel_breakdown:{title:"Channel type breakdown",what:"How the matching marketing entries split across the different channel types.",formula:"A count of entries for each channel type, biggest first.",status:mktStatus},
-  sum_sales_trend:{title:"Sales trend over time",what:"Total sales value for your selection, month by month.",formula:"Sum of Sales Value per month.",status:salesStatus},
-  eff_spr:{title:"Sales per Rupee Spent",what:"For a channel used in a district, how much sales value is linked to each ₹1 of marketing cost.",formula:"Sales value ÷ marketing cost, matched by the same district and month.",status:effStatus},
-  eff_index:{title:"Channel Efficiency Index",what:"A simple score comparing each channel + district to the average. 100 means average, above is better, below is worse.",formula:"Its sales-per-rupee ÷ the average sales-per-rupee × 100.",status:effStatus},
-  eff_matrix:{title:"Opportunity Matrix",what:"Sorts each channel + district into four action groups based on how efficient it is and how much it sells.",formula:"Efficiency vs 100 (above/below average) and total sales vs the middle value (median) → Scale / Invest / Optimise / Reduce.",status:effStatus},
-};
-function infoIcon(key){return '<span class="info-i" data-info="'+key+'" role="button" tabindex="0" aria-label="What this means" title="What this means">i</span>';}
-let infoPop=null;
-function openInfo(icon){
-  const d=INFO[icon.getAttribute("data-info")];if(!d)return;
-  if(!infoPop){infoPop=document.createElement("div");infoPop.className="info-pop";document.body.appendChild(infoPop);}
-  const st=typeof d.status==="function"?d.status():d.status;
-  infoPop.innerHTML='<div class="ip-title">'+esc(d.title)+'</div>'+
-    '<div class="ip-row"><b>What it means:</b> '+esc(d.what)+'</div>'+
-    '<div class="ip-row"><b>How it\'s worked out:</b> '+esc(d.formula)+'</div>'+
-    '<div class="ip-status">'+esc(st)+'</div>';
-  infoPop.style.display="block";infoPop._anchor=icon;
-  const r=icon.getBoundingClientRect(),pw=infoPop.offsetWidth||280;
-  let left=r.left;if(left+pw>window.innerWidth-10)left=window.innerWidth-10-pw;
-  infoPop.style.left=Math.max(10,left)+"px";infoPop.style.top=(r.bottom+6)+"px";
-}
-function closeInfo(){if(infoPop){infoPop.style.display="none";infoPop._anchor=null;}}
-document.addEventListener("click",e=>{
-  const icon=e.target.closest(".info-i");
-  if(icon){e.stopPropagation();if(infoPop&&infoPop._anchor===icon&&infoPop.style.display==="block")closeInfo();else openInfo(icon);return;}
-  if(!e.target.closest(".info-pop"))closeInfo();
-});
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape")closeInfo();
-  if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("info-i")){e.preventDefault();openInfo(e.target);}
-});
-window.addEventListener("scroll",closeInfo,true);
-
-// ================= CSV UPLOAD (bulk import) =================
-const TYPE_LABEL={activity:"Activities",marketing:"Marketing Channel",sales:"Sales"};
-// Our fields per type; required + kind drive validation. activityId is used for de-duplication.
+// ================= CSV UPLOAD =================
+const TYPE_LABEL={activity:"Activities",sales:"Sales"};
 const MAP_FIELDS={
   activity:[
-    {k:"activityId",label:"Activity ID"},
-    {k:"plannedDate",label:"Planned Date",required:true,kind:"date"},
-    {k:"employeeName",label:"Employee Name",required:true},
+    {k:"activityId",label:"Activity ID",aliases:["Activity ID","ID"]},
+    {k:"typeOfActivity",label:"Type of Activity",aliases:["Type of Activity","Activity Type","Type"]},
+    {k:"activityName",label:"Activities",required:true,aliases:["Activities","Activity","Activity Name","Channel Type","Channel"]},
+    {k:"product",label:"Product",aliases:["Product","Item"]},
+    {k:"date",label:"Date",required:true,kind:"date",aliases:["Date","Planned Date","Activity Date"]},
+    {k:"region",label:"Region / District",required:true,aliases:["Region","District","Region or District","Zila","Area"]},
+    {k:"reach",label:"Farmer Reach",kind:"number",aliases:["Farmer Reach","Reach","Farmers Reached","Actual"]},
+    {k:"cost",label:"Cost",kind:"number",aliases:["Cost","Spend","Budget","Amount"]},
+    {k:"employee",label:"Employee",aliases:["Employee","Employee Name"]},
     {k:"designation",label:"Designation"},
-    {k:"zone",label:"Zone"},{k:"region",label:"Region"},{k:"territory",label:"Territory"},
-    {k:"district",label:"District",required:true},
-    {k:"activity",label:"Activity"},{k:"activityType",label:"Activity Type"},
-    {k:"productCategory",label:"Product Category"},{k:"product",label:"Product"},
+    {k:"zone",label:"Zone"},{k:"territory",label:"Territory"},
     {k:"status",label:"Status"},{k:"achieved",label:"Achieved"},
-  ],
-  marketing:[
-    {k:"channelType",label:"Channel Type",required:true},
-    {k:"product",label:"Product"},
-    {k:"district",label:"District",required:true},
-    {k:"month",label:"Month",required:true,kind:"month"},
-    {k:"target",label:"Target",kind:"number"},{k:"actual",label:"Actual",kind:"number"},
-    {k:"cost",label:"Cost",kind:"number"},{k:"notes",label:"Notes"},
+    {k:"category",label:"Product Category",aliases:["Product Category","Category"]},
   ],
   sales:[
-    {k:"district",label:"District",required:true},
-    {k:"month",label:"Month",required:true,kind:"month"},
-    {k:"product",label:"Product",required:true},
-    {k:"salesValue",label:"Sales Value",required:true,kind:"number"},
-    {k:"unitsSold",label:"Units Sold",required:true,kind:"number"},
+    {k:"district",label:"District",required:true,aliases:["District","Region","Zila"]},
+    {k:"month",label:"Month",required:true,kind:"month",aliases:["Month","Date","Period"]},
+    {k:"product",label:"Product",required:true,aliases:["Product","Item"]},
+    {k:"salesValue",label:"Sales Value",required:true,kind:"number",aliases:["Sales Value","Sales","Revenue","Value"]},
+    {k:"unitsSold",label:"Units Sold",required:true,kind:"number",aliases:["Units Sold","Units","Quantity","Qty"]},
   ],
 };
 let uploadState={};
-
 function parseCSV(text){
   const rows=[];let row=[],field="",inQ=false,i=0;const n=text.length;
   while(i<n){const c=text[i];
-    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i+=2;continue;} inQ=false;i++;continue;} field+=c;i++;continue; }
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){field+='"';i+=2;continue;}inQ=false;i++;continue;}field+=c;i++;continue;}
     if(c==='"'){inQ=true;i++;continue;}
     if(c===','){row.push(field);field="";i++;continue;}
     if(c==='\r'){i++;continue;}
@@ -1233,174 +737,112 @@ function parseCSV(text){
   if(field.length||row.length){row.push(field);rows.push(row);}
   return rows;
 }
-function normDate(s){
-  s=String(s).trim();
-  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if(m){const y=+m[1],mo=+m[2],da=+m[3];if(y>=2000&&y<=2100&&mo>=1&&mo<=12&&da>=1&&da<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");return "";}
-  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if(m){let mo=+m[1],da=+m[2];const y=+m[3];if(mo>12&&da<=12){const t=mo;mo=da;da=t;}if(y>=2000&&y<=2100&&mo>=1&&mo<=12&&da>=1&&da<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");return "";}
-  const d=new Date(s);if(!isNaN(d)){const y=d.getFullYear();if(y>=2000&&y<=2100)return d.toISOString().slice(0,10);}
-  return "";
-}
-function normMonth(s){
-  s=String(s).trim();
-  let m=s.match(/^(\d{4})-(\d{1,2})/);if(m){const mo=+m[2];if(mo>=1&&mo<=12)return m[1]+"-"+String(mo).padStart(2,"0");}
-  m=s.match(/^(\d{1,2})[\/\-](\d{4})$/);if(m){const mo=+m[1];if(mo>=1&&mo<=12)return m[2]+"-"+String(mo).padStart(2,"0");}
-  const names=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-  m=s.toLowerCase().match(/([a-z]{3,})[a-z]*\s+(\d{4})/);if(m){const idx=names.indexOf(m[1].slice(0,3));if(idx>=0)return m[2]+"-"+String(idx+1).padStart(2,"0");}
-  const d=new Date(s);if(!isNaN(d)){const y=d.getFullYear();if(y>=2000&&y<=2100)return y+"-"+String(d.getMonth()+1).padStart(2,"0");}
-  return "";
-}
+function normDate(s){s=String(s).trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m){const y=+m[1],mo=+m[2],da=+m[3];if(y>=2000&&y<=2100&&mo>=1&&mo<=12&&da>=1&&da<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");return "";}m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);if(m){let mo=+m[1],da=+m[2];const y=+m[3];if(mo>12&&da<=12){const t=mo;mo=da;da=t;}if(y>=2000&&y<=2100&&mo>=1&&mo<=12&&da>=1&&da<=31)return y+"-"+String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");return "";}const d=new Date(s);if(!isNaN(d)){const y=d.getFullYear();if(y>=2000&&y<=2100)return d.toISOString().slice(0,10);}return "";}
+function normMonth(s){s=String(s).trim();let m=s.match(/^(\d{4})-(\d{1,2})/);if(m){const mo=+m[2];if(mo>=1&&mo<=12)return m[1]+"-"+String(mo).padStart(2,"0");}m=s.match(/^(\d{1,2})[\/\-](\d{4})$/);if(m){const mo=+m[1];if(mo>=1&&mo<=12)return m[2]+"-"+String(mo).padStart(2,"0");}const names=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];m=s.toLowerCase().match(/([a-z]{3,})[a-z]*\s+(\d{4})/);if(m){const idx=names.indexOf(m[1].slice(0,3));if(idx>=0)return m[2]+"-"+String(idx+1).padStart(2,"0");}const d=new Date(s);if(!isNaN(d)){const y=d.getFullYear();if(y>=2000&&y<=2100)return y+"-"+String(d.getMonth()+1).padStart(2,"0");}return "";}
 function parseNum(s){const t=String(s).replace(/[^0-9.\-]/g,"");if(t===""||t==="-"||t===".")return null;const n=parseFloat(t);return isNaN(n)?null:n;}
 function normHead(s){return String(s).toLowerCase().replace(/[^a-z0-9]/g,"");}
-function autoMatch(f,headers){const targets=[normHead(f.label),normHead(f.k)];for(let i=0;i<headers.length;i++){if(targets.includes(normHead(headers[i])))return i;}return -1;}
+function autoMatch(f,headers){const targets=[normHead(f.label),normHead(f.k)].concat((f.aliases||[]).map(normHead));for(let i=0;i<headers.length;i++){if(targets.includes(normHead(headers[i])))return i;}return -1;}
 function existingActivityIds(){const s=new Set(),ci=IDX["Activity ID"];for(const r of ROWS){const v=r[ci];if(v)s.add(String(v));}for(const e of manual.activity){if(e.activityId)s.add(String(e.activityId));}return s;}
-
 function openUpload(){document.getElementById("uploadOverlay").classList.add("open");showUploadChooser();}
 function closeUpload(){document.getElementById("uploadOverlay").classList.remove("open");}
 function showUploadChooser(){
   document.getElementById("uploadTitle").textContent="Upload CSV";
   const body=document.getElementById("uploadBody");
   body.innerHTML='<p class="step-note">Step 1 of 3 — what kind of data is in this file?</p><div class="choose">'+
-    '<button data-t="activity"><b>Activities</b><span>Field activities — like the activity export.</span></button>'+
-    '<button data-t="marketing"><b>Marketing Channel</b><span>Channel campaigns — channel type, district, month, cost…</span></button>'+
+    '<button data-t="activity"><b>Activities</b><span>Any activity — field work or channel campaigns.</span></button>'+
     '<button data-t="sales"><b>Sales</b><span>Sales records — district, month, product, value, units.</span></button></div>';
   body.querySelectorAll(".choose button").forEach(b=>b.addEventListener("click",()=>showUploadFile(b.getAttribute("data-t"))));
 }
 function showUploadFile(type){
-  uploadState={type};
-  document.getElementById("uploadTitle").textContent="Upload CSV — "+TYPE_LABEL[type];
+  uploadState={type};document.getElementById("uploadTitle").textContent="Upload CSV — "+TYPE_LABEL[type];
   const body=document.getElementById("uploadBody");
-  body.innerHTML='<p class="step-note">Step 2 of 3 — choose your CSV file. It can have any column names or order, and extra columns are fine — you\'ll match them next.</p>'+
-    '<div class="filebox">📄 Select a .csv file from your computer<br><input type="file" id="csvFile" accept=".csv,text/csv"></div>'+
-    '<div id="fileMsg"></div>'+
-    '<div class="up-foot"><button class="btn" id="fileBack">&larr; Back</button><span></span></div>';
+  body.innerHTML='<p class="step-note">Step 2 of 3 — choose your CSV file. Any column names, order, or extra columns are fine — you\'ll match them next.</p><div class="filebox">📄 Select a .csv file<br><input type="file" id="csvFile" accept=".csv,text/csv"></div><div id="fileMsg"></div><div class="up-foot"><button class="btn" id="fileBack">&larr; Back</button><span></span></div>';
   document.getElementById("fileBack").addEventListener("click",showUploadChooser);
   document.getElementById("csvFile").addEventListener("change",async e=>{
-    const file=e.target.files[0];if(!file)return;
-    let text;try{text=await file.text();}catch(err){document.getElementById("fileMsg").innerHTML='<div class="up-msg err">Could not read that file.</div>';return;}
+    const file=e.target.files[0];if(!file)return;let text;try{text=await file.text();}catch(err){document.getElementById("fileMsg").innerHTML='<div class="up-msg err">Could not read that file.</div>';return;}
     const rows=parseCSV(text).filter(r=>!(r.length===1&&r[0].trim()===""));
-    if(rows.length<2){document.getElementById("fileMsg").innerHTML='<div class="up-msg err">This file needs a header row plus at least one row of data.</div>';return;}
-    uploadState.headers=rows[0].map(h=>h.trim());
-    uploadState.dataRows=rows.slice(1);
-    showMapping(type);
+    if(rows.length<2){document.getElementById("fileMsg").innerHTML='<div class="up-msg err">This file needs a header row plus at least one data row.</div>';return;}
+    uploadState.headers=rows[0].map(h=>h.trim());uploadState.dataRows=rows.slice(1);showMapping(type);
   });
 }
 function showMapping(type){
   const headers=uploadState.headers,dataRows=uploadState.dataRows,fields=MAP_FIELDS[type];
-  const body=document.getElementById("uploadBody");
-  const mapping={};fields.forEach(f=>{mapping[f.k]=autoMatch(f,headers);});
-  const opt=(sel)=>'<option value="-1">— none —</option>'+headers.map((h,i)=>'<option value="'+i+'"'+(i===sel?" selected":"")+'>'+esc(h)+'</option>').join("");
-  const rowsHtml=fields.map(f=>{
-    const auto=mapping[f.k]>=0;
-    return '<div class="map-row"><div class="of">'+esc(f.label)+(f.required?' <span class="req">*</span>':"")+
-      (f.k==="activityId"?'<small>used to avoid importing the same activity twice</small>':"")+'</div>'+
-      '<div><select data-k="'+f.k+'">'+opt(mapping[f.k])+'</select>'+(auto?' <span class="auto">auto-matched</span>':"")+'</div></div>';
-  }).join("");
-  body.innerHTML='<p class="step-note">Step 3 of 3 — match your file\'s columns to our fields. We\'ve auto-matched any with the same name; fields marked <span style="color:var(--bad)">*</span> are required.</p>'+
-    '<p class="step-note">Columns found in your file ('+nf.format(dataRows.length)+' data rows):</p><div class="up-headers">'+headers.map(h=>'<span class="h">'+esc(h)+'</span>').join("")+'</div>'+
-    '<div id="mapMsg"></div><div class="map-grid">'+rowsHtml+'</div>'+
-    '<div class="up-foot"><button class="btn" id="mapBack">&larr; Back</button><button class="btn primary" id="mapImport">Import data</button></div>';
+  const body=document.getElementById("uploadBody");const mapping={};fields.forEach(f=>{mapping[f.k]=autoMatch(f,headers);});
+  const opt=sel=>'<option value="-1">— none —</option>'+headers.map((h,i)=>'<option value="'+i+'"'+(i===sel?" selected":"")+'>'+esc(h)+'</option>').join("");
+  const rowsHtml=fields.map(f=>{const auto=mapping[f.k]>=0;return '<div class="map-row"><div class="of">'+esc(f.label)+(f.required?' <span class="req">*</span>':"")+(f.k==="activityId"?'<small>used to avoid importing the same activity twice</small>':"")+'</div><div><select data-k="'+f.k+'">'+opt(mapping[f.k])+'</select>'+(auto?' <span class="auto">auto-matched</span>':"")+'</div></div>';}).join("");
+  body.innerHTML='<p class="step-note">Step 3 of 3 — match your columns to our fields. Auto-matched by name where possible; fields marked <span style="color:var(--bad)">*</span> are required.</p><p class="step-note">Columns in your file ('+nf.format(dataRows.length)+' data rows):</p><div class="up-headers">'+headers.map(h=>'<span class="h">'+esc(h)+'</span>').join("")+'</div><div id="mapMsg"></div><div class="map-grid">'+rowsHtml+'</div><div class="up-foot"><button class="btn" id="mapBack">&larr; Back</button><button class="btn primary" id="mapImport">Import data</button></div>';
   body.querySelectorAll("select[data-k]").forEach(s=>s.addEventListener("change",()=>{mapping[s.getAttribute("data-k")]=parseInt(s.value,10);s.classList.remove("unmapped-req");}));
   document.getElementById("mapBack").addEventListener("click",()=>showUploadFile(type));
   document.getElementById("mapImport").addEventListener("click",()=>{
     const missing=fields.filter(f=>f.required&&!(mapping[f.k]>=0));
-    if(missing.length){
-      document.getElementById("mapMsg").innerHTML='<div class="up-msg err">These required fields aren\'t matched to a column yet: <b>'+missing.map(f=>esc(f.label)).join(", ")+'</b>. Pick a column for each — or if your file doesn\'t have it, that data can\'t be imported.</div>';
-      missing.forEach(f=>{const s=body.querySelector('select[data-k="'+f.k+'"]');if(s)s.classList.add("unmapped-req");});
-      return;
-    }
+    if(missing.length){document.getElementById("mapMsg").innerHTML='<div class="up-msg err">These required fields aren\'t matched yet: <b>'+missing.map(f=>esc(f.label)).join(", ")+'</b>. Pick a column for each — or if your file doesn\'t have it, that data can\'t be imported.</div>';missing.forEach(f=>{const s=body.querySelector('select[data-k="'+f.k+'"]');if(s)s.classList.add("unmapped-req");});return;}
     runImport(type,fields,mapping,dataRows);
   });
 }
 function processRows(type,fields,mapping,dataRows){
-  const valid=[],skips=new Map();
-  const addSkip=r=>skips.set(r,(skips.get(r)||0)+1);
-  let existing=null,seen=null;
-  if(type==="activity"){existing=existingActivityIds();seen=new Set();}
+  const valid=[],skips=new Map();const addSkip=r=>skips.set(r,(skips.get(r)||0)+1);
+  let existing=null,seen=null;if(type==="activity"){existing=existingActivityIds();seen=new Set();}
   for(const dr of dataRows){
     const out={};let bad=null;
-    for(const f of fields){
-      const idx=mapping[f.k];
-      const raw=(idx==null||idx<0)?"":(dr[idx]!==undefined?String(dr[idx]).trim():"");
-      let val;
+    for(const f of fields){const idx=mapping[f.k];const raw=(idx==null||idx<0)?"":(dr[idx]!==undefined?String(dr[idx]).trim():"");let val;
       if(f.kind==="date"){val=raw?normDate(raw):"";if(raw&&!val)bad=bad||("invalid date in "+f.label);}
       else if(f.kind==="month"){val=raw?normMonth(raw):"";if(raw&&!val)bad=bad||("invalid month in "+f.label);}
       else if(f.kind==="number"){const nn=raw?parseNum(raw):null;if(raw&&nn==null&&f.required)bad=bad||("invalid number in "+f.label);val=(nn==null)?null:nn;}
       else val=raw;
       if(f.required&&(val===""||val==null)&&!bad)bad=bad||("missing "+f.label);
-      out[f.k]=val;
-    }
+      out[f.k]=val;}
+    if(type==="activity"&&(!out.typeOfActivity))out.typeOfActivity="Field";
     if(bad){addSkip(bad);continue;}
-    if(type==="activity"){
-      const id=out.activityId?String(out.activityId):"";
-      if(id){if(existing.has(id)||seen.has(id)){addSkip("duplicate Activity ID");continue;}seen.add(id);}
-    }
+    if(type==="activity"){const id=out.activityId?String(out.activityId):"";if(id){if(existing.has(id)||seen.has(id)){addSkip("duplicate Activity ID");continue;}seen.add(id);}}
     valid.push(out);
   }
   return {valid,skips};
 }
 async function bulkInsert(type,payloads,onProg){
   const BATCH=500,inserted=[];
-  for(let i=0;i<payloads.length;i+=BATCH){
-    const chunk=payloads.slice(i,i+BATCH);
+  for(let i=0;i<payloads.length;i+=BATCH){const chunk=payloads.slice(i,i+BATCH);
     const r=await fetch("/api/entries",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type,entries:chunk})});
-    const j=await r.json();
-    if(!r.ok||!j.ok)throw new Error(j.error||"the server rejected the import.");
+    const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||"the server rejected the import.");
     (j.created||[]).forEach((c,idx)=>inserted.push({id:c.id,type,created_at:c.created_at,...chunk[idx]}));
-    if(onProg)onProg(Math.min(i+BATCH,payloads.length),payloads.length);
-  }
+    if(onProg)onProg(Math.min(i+BATCH,payloads.length),payloads.length);}
   return inserted;
 }
 async function runImport(type,fields,mapping,dataRows){
-  const body=document.getElementById("uploadBody");
-  const {valid,skips}=processRows(type,fields,mapping,dataRows);
+  const body=document.getElementById("uploadBody");const {valid,skips}=processRows(type,fields,mapping,dataRows);
   const skipTotal=[...skips.values()].reduce((a,b)=>a+b,0);
   if(!valid.length){showImportSummary(0,skipTotal,skips,"Nothing could be imported — none of the rows were usable.");return;}
-  body.innerHTML='<p class="step-note">Importing '+nf.format(valid.length)+' rows… please keep this window open.</p>'+
-    '<div class="progress-track"><div class="progress-fill" id="upProg"></div></div><div id="upProgTxt" class="step-note"></div>';
+  body.innerHTML='<p class="step-note">Importing '+nf.format(valid.length)+' rows… keep this window open.</p><div class="progress-track"><div class="progress-fill" id="upProg"></div></div><div id="upProgTxt" class="step-note"></div>';
   let inserted;
-  try{
-    inserted=await bulkInsert(type,valid,(done,total)=>{
-      document.getElementById("upProg").style.width=Math.round(done/total*100)+"%";
-      document.getElementById("upProgTxt").textContent=nf.format(done)+" of "+nf.format(total)+" saved";
-    });
-  }catch(e){showImportSummary(0,skipTotal,skips,"Import failed — "+e.message+" No partial data was left in a broken state.");return;}
+  try{inserted=await bulkInsert(type,valid,(done,total)=>{document.getElementById("upProg").style.width=Math.round(done/total*100)+"%";document.getElementById("upProgTxt").textContent=nf.format(done)+" of "+nf.format(total)+" saved";});}
+  catch(e){showImportSummary(0,skipTotal,skips,"Import failed — "+e.message);return;}
   for(const it of inserted)manual[type].push(it);
-  if(type==="activity")rebuildActRows();
-  dbConfigured=true;refreshAfterAdd();
+  dbConfigured=true;buildUnified();refreshAll();
   showImportSummary(inserted.length,skipTotal,skips,"");
   toast("Imported "+nf.format(inserted.length)+" row"+(inserted.length===1?"":"s")+".");
 }
 function showImportSummary(added,skipTotal,skips,errMsg){
   const body=document.getElementById("uploadBody");
   const skipHtml=skips.size?'<div class="skip-list">'+[...skips.entries()].map(([r,c])=>'<div>• '+esc(r)+': '+nf.format(c)+' row'+(c===1?"":"s")+'</div>').join("")+'</div>':"";
-  body.innerHTML=(errMsg?'<div class="up-msg err">'+esc(errMsg)+'</div>':'<div class="up-msg ok">Import complete — the data is saved and will stay after a refresh.</div>')+
-    '<div class="sum-stat"><div><div class="b">'+nf.format(added)+'</div><div class="step-note">rows added</div></div>'+
-    '<div><div class="b skip">'+nf.format(skipTotal)+'</div><div class="step-note">rows skipped</div></div></div>'+
-    (skipTotal?'<p class="step-note">Why rows were skipped:</p>'+skipHtml:"")+
-    '<div class="up-foot"><span></span><button class="btn primary" id="upDone">Done</button></div>';
+  body.innerHTML=(errMsg?'<div class="up-msg err">'+esc(errMsg)+'</div>':'<div class="up-msg ok">Import complete — saved and will stay after a refresh.</div>')+'<div class="sum-stat"><div><div class="b">'+nf.format(added)+'</div><div class="step-note">rows added</div></div><div><div class="b skip">'+nf.format(skipTotal)+'</div><div class="step-note">rows skipped</div></div></div>'+(skipTotal?'<p class="step-note">Why rows were skipped:</p>'+skipHtml:"")+'<div class="up-foot"><span></span><button class="btn primary" id="upDone">Done</button></div>';
   document.getElementById("upDone").addEventListener("click",closeUpload);
 }
 
 // ================= plumbing =================
-function wireTabs(){
-  document.querySelectorAll("[data-tab]").forEach(t=>t.addEventListener("click",()=>{
-    document.querySelectorAll("[data-tab]").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active");currentTab=t.getAttribute("data-tab");
-    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-    document.getElementById("page-"+currentTab).classList.add("active");
-  }));
+function switchTab(name){
+  document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.getAttribute("data-tab")===name));
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById("page-"+name).classList.add("active");currentTab=name;
 }
+function wireTabs(){document.querySelectorAll("[data-tab]").forEach(t=>t.addEventListener("click",()=>switchTab(t.getAttribute("data-tab"))));}
 function wireModals(){
   document.getElementById("addBtn").addEventListener("click",openAdd);
   document.getElementById("addClose").addEventListener("click",closeAdd);
-  document.getElementById("uploadBtn").addEventListener("click",openUpload);
-  document.getElementById("uploadClose").addEventListener("click",closeUpload);
-  document.getElementById("uploadOverlay").addEventListener("click",e=>{if(e.target.id==="uploadOverlay")closeUpload();});
   document.getElementById("formBack").addEventListener("click",showChooser);
   document.getElementById("formSubmit").addEventListener("click",submitForm);
   document.getElementById("addOverlay").addEventListener("click",e=>{if(e.target.id==="addOverlay")closeAdd();});
+  document.getElementById("uploadBtn").addEventListener("click",openUpload);
+  document.getElementById("uploadClose").addEventListener("click",closeUpload);
+  document.getElementById("uploadOverlay").addEventListener("click",e=>{if(e.target.id==="uploadOverlay")closeUpload();});
   document.getElementById("recentBtn").addEventListener("click",()=>document.getElementById("recentOverlay").classList.add("open"));
   document.getElementById("recentClose").addEventListener("click",()=>document.getElementById("recentOverlay").classList.remove("open"));
   document.getElementById("recentOverlay").addEventListener("click",e=>{if(e.target.id==="recentOverlay")e.currentTarget.classList.remove("open");});

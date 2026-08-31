@@ -3,18 +3,23 @@
 An internal tool to browse field-marketing data and add new entries by hand.
 It runs on Vercel and has two parts:
 
-- **A dashboard** (`index.html`) — filter the data and view it. Two tabs:
-  - **Activities** — the ~69,000 records from the uploaded CSV files, plus any
-    activities you add by hand. Filter by employee, designation, zone, region,
-    territory, district, activity, activity type, product category, product,
-    status, achieved, and date range.
-  - **Marketing Channel** — channel campaigns you add by hand. Filter by channel
-    type, district, and month. Pick a district to see two charts side by side:
-    channel activity over time and sales over time (sales fills in automatically
-    once sales entries exist).
-- **A small database** — everything you add through the **+ Add New Entry** button
-  (activities, marketing channel entries, and sales entries) is saved permanently
-  so everyone sees the same data, not just your browser.
+- **A dashboard** (`index.html`) — three tabs:
+  - **Overview** (opens first) — top stats (total activities, completion rate,
+    products promoted, regions active, farmer reach, cost) and bar breakdowns
+    (activity type/channel mix, top products, category split, top regions, top
+    activities). Every product, region, activity and type name is clickable —
+    click one to filter the whole page to everything connected to it.
+  - **Activities** — one merged table of all activities. Field work and channel
+    campaigns are now a single thing. Core fields: Type of activity (Digital /
+    OOH / Field), Activity name, Product, Date, Region/District, Farmer Reach,
+    Cost — plus optional Employee, Designation, Zone, Territory, Status,
+    Achieved, Product Category (kept from the old data). Filter by any of these.
+  - **Channel Efficiency** — matches activity cost with sales value by region and
+    month (needs enough data to switch on).
+- **A small database** — everything you add through **+ Add New Entry** or
+  **⬆ Upload CSV** (activities and sales) is saved permanently so everyone sees
+  the same data. Older data (activities and marketing-channel entries) is merged
+  into the single Activities view automatically — nothing is lost.
 
 ## One-time setup: connect the database
 
