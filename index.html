@@ -298,7 +298,7 @@
     <div class="sum-controls">
       <div class="sum-lead">Pick one thing to explore, and see everything connected to it summarized below.</div>
       <div class="field"><label>Explore by</label>
-        <select id="exDim"><option value="district">District</option><option value="product">Product</option><option value="type">Activity Type</option><option value="date">Date Range</option></select>
+        <select id="exDim"><option value="district">District</option><option value="product">Product</option><option value="activity">Activity</option><option value="type">Activity Type</option><option value="date">Date Range</option></select>
       </div>
       <div class="field" id="exValueWrap"></div>
     </div>
@@ -752,7 +752,7 @@ function rebuildExValue(){
     const a=wrap.querySelector("#exFrom"),b=wrap.querySelector("#exTo");a.value=exFrom;b.value=exTo;
     a.addEventListener("change",e=>{exFrom=e.target.value;renderExplore();});b.addEventListener("change",e=>{exTo=e.target.value;renderExplore();});return;
   }
-  const label={district:"District",product:"Product",type:"Activity Type"}[exDim];
+  const label={district:"District",product:"Product",activity:"Activity",type:"Activity Type"}[exDim];
   const lab=document.createElement("label");lab.textContent=label;wrap.appendChild(lab);
   const dd=makeDropdown({label,getCounts:q=>exValueCounts(exDim,q),onChange:v=>{exValue=v;renderExplore();}});
   wrap.appendChild(dd.el);
@@ -760,12 +760,12 @@ function rebuildExValue(){
 function exValueCounts(dim,q){
   const m=new Map();
   if(dim==="type")["Digital","OOH","Field"].forEach(v=>{if(!q||v.toLowerCase().includes(q))m.set(v,0);});
-  const ci=dim==="product"?UF.product:dim==="type"?UF.type:UF.region;
+  const ci=dim==="product"?UF.product:dim==="type"?UF.type:dim==="activity"?UF.name:UF.region;
   for(const u of UROWS){const v=u[ci];if(!v)continue;if(q&&!String(v).toLowerCase().includes(q))continue;m.set(v,(m.get(v)||0)+1);}
   return m;
 }
-function exActivities(sel){return UROWS.filter(u=>{if(sel.dim==="district")return u[UF.region]===sel.value;if(sel.dim==="product")return u[UF.product]===sel.value;if(sel.dim==="type")return u[UF.type]===sel.value;const d=u[UF.date];return d&&(!sel.from||d>=sel.from)&&(!sel.to||d<=sel.to);});}
-function exSales(sel){if(sel.dim==="product"||sel.dim==="type")return null;return manual.sales.filter(e=>{if(sel.dim==="district")return e.district===sel.value;return e.month&&monthInRange(e.month,sel.from,sel.to);});}
+function exActivities(sel){return UROWS.filter(u=>{if(sel.dim==="district")return u[UF.region]===sel.value;if(sel.dim==="product")return u[UF.product]===sel.value;if(sel.dim==="activity")return u[UF.name]===sel.value;if(sel.dim==="type")return u[UF.type]===sel.value;const d=u[UF.date];return d&&(!sel.from||d>=sel.from)&&(!sel.to||d<=sel.to);});}
+function exSales(sel){if(sel.dim==="product"||sel.dim==="type"||sel.dim==="activity")return null;return manual.sales.filter(e=>{if(sel.dim==="district")return e.district===sel.value;return e.month&&monthInRange(e.month,sel.from,sel.to);});}
 function exInsight(sel){
   const rows=exActivities(sel),sales=exSales(sel),parts=[];
   const subject=sel.dim==="date"?"This date range":esc(sel.value);
@@ -791,9 +791,10 @@ function exActSection(sel){
     const rate=statusable?Math.round(completed/statusable*100)+"%":"–",g=Math.round(GLOBAL.compRate*100);
     let totalSub="";if(sel.dim==="district"||sel.dim==="product"){const ri=rankOf(sel.dim==="district"?GLOBAL.byRegion:GLOBAL.byProduct,sel.value);totalSub="ranks "+ordinal(ri.rank)+" of "+nf.format(ri.total)+" "+(sel.dim==="district"?"districts":"products");}
     const t='<div class="tiles">'+tileS(nf.format(rows.length),"Total activities",totalSub)+tileS(rate,"Completion rate",statusable?"overall avg "+g+"%":"")+tileS(nf.format(reach),"Farmer reach","")+tileS("₹"+nf.format(cost),"Total cost","")+'</div>';
-    const b1=hbarsList(countBy(rows,UF.name),6);
+    let b1t="Top activities",b1=hbarsList(countBy(rows,UF.name),6);
+    if(sel.dim==="activity"){b1t="Top products";b1=hbarsList(countBy(rows,UF.product),6);}
     let b2t,b2;if(sel.dim==="district"){b2t="Top products";b2=hbarsList(countBy(rows,UF.product),6);}else{b2t="Top regions / districts";b2=hbarsList(countBy(rows,UF.region),6);}
-    inner=t+'<div class="bd2"><div><div class="subhead">Top activities</div>'+b1+'</div><div><div class="subhead">'+b2t+'</div>'+b2+'</div></div>';
+    inner=t+'<div class="bd2"><div><div class="subhead">'+b1t+'</div>'+b1+'</div><div><div class="subhead">'+b2t+'</div>'+b2+'</div></div>';
   }
   return '<div class="sum-section"><h3><span class="sdot act"></span>Activities summary</h3><div class="sdesc">Activities connected to your selection.</div>'+inner+'</div>';
 }
@@ -808,9 +809,9 @@ function exSalesSection(sel){
 function renderExplore(){
   const body=document.getElementById("exBody");if(!body)return;
   const hasSel=exDim==="date"?(exFrom&&exTo):!!exValue;
-  if(!hasSel){const what={district:"a district",product:"a product",type:"an activity type",date:"a start and end date"}[exDim];body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';updateExMap(null);return;}
+  if(!hasSel){const what={district:"a district",product:"a product",activity:"an activity",type:"an activity type",date:"a start and end date"}[exDim];body.innerHTML='<div class="sum-empty" style="padding:44px">Choose '+what+' above to see the summary.</div>';updateExMap(null);return;}
   const sel={dim:exDim,value:exValue,from:exFrom,to:exTo};
-  const dimLabel={district:"District",product:"Product",type:"Activity Type",date:"Date Range"}[exDim];
+  const dimLabel={district:"District",product:"Product",activity:"Activity",type:"Activity Type",date:"Date Range"}[exDim];
   const valLabel=exDim==="date"?(fmtNiceDate(exFrom)+" → "+fmtNiceDate(exTo)):exValue;
   body.innerHTML='<div class="banner">Showing everything connected to <b>'+esc(dimLabel)+': '+esc(valLabel)+'</b></div><div class="insight"><span class="ico">💡</span><span>'+exInsight(sel)+'</span></div>'+exActSection(sel)+exSalesSection(sel);
   updateExMap(sel);
