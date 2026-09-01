@@ -153,6 +153,8 @@
   .subtab{padding:8px 14px;border:1px solid transparent;border-bottom:none;border-radius:9px 9px 0 0;cursor:pointer;font-weight:600;color:var(--muted);font-size:13px}
   .subtab:hover{color:var(--ink)}
   .subtab.active{color:var(--brand);background:var(--panel);border-color:var(--line);position:relative;top:1px}
+  .ov-featured{margin-bottom:16px}
+  .ov-featured .bd-card,.ov-featured .sum-section{margin-bottom:0}
   .showall{display:inline-block;margin-top:8px;color:var(--brand);cursor:pointer;font-size:12px;font-weight:600}
   .attn-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
   .attn-name{font-weight:600}.attn-name .attn-meta{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
@@ -280,16 +282,15 @@
     <div class="banner">Click any product, region, activity or type below to explore everything connected to it. Click again elsewhere to add more, or remove a filter with its ×.</div>
     <div class="ov-chips" id="ovChips"></div>
     <div class="ov-tiles" id="ovTiles"></div>
-    <div class="breakdowns" id="ovBreak"></div>
-    <div class="ov-note" id="ovNote"></div>
-    <div id="ovMapWrap"></div>
     <div class="subtabs" id="ovSubtabs">
       <span class="subtab active" data-sub="product">By Product</span>
       <span class="subtab" data-sub="region">By Region</span>
       <span class="subtab" data-sub="month">By Month</span>
       <span class="subtab" data-sub="attention">Needs Attention</span>
     </div>
-    <div id="ovSubBody"></div>
+    <div id="ovMapWrap"></div>
+    <div id="ovBreak"></div>
+    <div class="ov-note" id="ovNote"></div>
   </div>
 
   <!-- EXPLORE (dropdown summary) -->
@@ -591,40 +592,40 @@ function renderOverview(){
   const rate=statusable?Math.round(completed/statusable*100)+"%":"–";
   const tiles=[{n:nf.format(rows.length),l:"Total activities"},{n:rate,l:"Completion rate",info:"completion"},{n:nf.format(prods.size),l:"Products promoted"},{n:nf.format(regs.size),l:"Regions active"},{n:nf.format(reach),l:"Farmer reach"},{n:"₹"+nf.format(cost),l:"Total cost"}];
   document.getElementById("ovTiles").innerHTML=tiles.map(x=>'<div class="tile"><div class="n">'+x.n+'</div><div class="l">'+x.l+(x.info?infoIcon(x.info):"")+'</div></div>').join("");
-  // breakdowns
-  const cards=[
-    bdCard("Activity type / channel mix","How activities split across Digital, OOH and Field.",countBy(rows,UF.type),"type",99,typeColor),
-    bdCard("Top products by activity volume","Which products have the most activity.",countBy(rows,UF.product),"product",8),
-    bdCard("Category split","Activities by product category.",countBy(rows,UF.category),"category",8),
-    bdCard("Top regions / districts","Where activity is concentrated.",countBy(rows,UF.region),"region",8),
-    bdCard("Top activities","The most common specific activities.",countBy(rows,UF.name),"name",8),
-  ];
-  document.getElementById("ovBreak").innerHTML=cards.join("");
-  document.getElementById("ovNote").innerHTML='Every underlined name is clickable. <a id="ovToList" style="color:var(--brand);cursor:pointer;font-weight:600">View these '+nf.format(rows.length)+' records in the Activities list →</a>';
+  // lens tabs decide which dimension leads; all cards + map stay and respect ovFilters
+  document.querySelectorAll("#ovSubtabs .subtab").forEach(s=>s.classList.toggle("active",s.getAttribute("data-sub")===ovSub));
+  const C={
+    type:()=>bdCard("Activity type / channel mix","How activities split across Digital, OOH and Field.",countBy(rows,UF.type),"type",99,typeColor),
+    product:l=>bdCard("Products by activity volume","Which products have the most activity.",countBy(rows,UF.product),"product",l||8),
+    category:()=>bdCard("Category split","Activities by product category.",countBy(rows,UF.category),"category",8),
+    region:l=>bdCard("Regions / districts by activity","Where activity is concentrated.",countBy(rows,UF.region),"region",l||8),
+    name:l=>bdCard("Activities by volume","The most common specific activities.",countBy(rows,UF.name),"name",l||8),
+    month:()=>cardMonth(rows),
+    attention:()=>subAttention(rows),
+  };
+  let featured,grid,lensNote;
+  if(ovSub==="region"){featured=[C.region(12)];grid=[C.type(),C.category(),C.product(),C.name()];lensNote="Organised by region first.";}
+  else if(ovSub==="month"){featured=[C.month()];grid=[C.type(),C.product(),C.category(),C.region()];lensNote="Trend over time, front and centre.";}
+  else if(ovSub==="attention"){featured=[C.attention()];grid=[C.product(),C.region()];lensNote="Districts that stand out for the current selection.";}
+  else{featured=[C.product(12)];grid=[C.type(),C.category(),C.region(),C.name()];lensNote="Organised by product first.";}
+  document.getElementById("ovBreak").innerHTML='<div class="ov-featured">'+featured.join("")+'</div><div class="breakdowns">'+grid.join("")+'</div>';
+  document.getElementById("ovNote").innerHTML=esc(lensNote)+' Every underlined name is clickable. <a id="ovToList" style="color:var(--brand);cursor:pointer;font-weight:600">View these '+nf.format(rows.length)+' records in the Activities list →</a>';
   const toList=document.getElementById("ovToList");if(toList)toList.addEventListener("click",overviewToActivities);
   const clr=document.getElementById("ovClear");if(clr)clr.addEventListener("click",()=>{ovFilters={};renderOverview();});
-  document.querySelectorAll("#ovSubtabs .subtab").forEach(s=>s.classList.toggle("active",s.getAttribute("data-sub")===ovSub));
-  renderOvSub();
   if(window._ovMapReady)updateOvMap();
 }
-// ---- Overview sub-tabs ----
+function cardMonth(rows){
+  const m=new Map();for(const u of rows){const d=u[UF.date];if(!d||d.length<7)continue;const mo=d.slice(0,7);m.set(mo,(m.get(mo)||0)+1);}
+  const months=[...m.keys()].sort();
+  let body;
+  if(!months.length)body='<div class="sum-empty">No dated activity in this view.</div>';
+  else{const max=Math.max.apply(null,months.map(k=>m.get(k)));body=months.map(k=>{const v=m.get(k),w=Math.max(4,Math.round(v/max*100));return '<div class="hbar"><div class="lbl">'+esc(fmtMonthLabel(k))+'</div><div class="track"><div class="fill" style="width:'+w+'%;background:var(--brand)"></div></div><div class="num">'+nf.format(v)+'</div></div>';}).join("");}
+  return '<div class="bd-card"><h3>Activity trend by month</h3><div class="sdesc">Number of activities each month for the current selection.</div>'+body+'</div>';
+}
+// ---- helpers for the lenses ----
 function aggBy(rows,idx){const m=new Map();for(const u of rows){const k=u[idx];if(!k)continue;let o=m.get(k);if(!o){o={count:0,completed:0,statusable:0,reach:0,cost:0};m.set(k,o);}o.count++;const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){o.statusable++;if(st==="Completed")o.completed++;}o.reach+=num(u[UF.reach]);o.cost+=num(u[UF.cost]);}return m;}
 function pctCell(o){return o.statusable?Math.round(o.completed/o.statusable*100)+"%":"–";}
-function subTable(rows,idx,label){
-  const list=[...aggBy(rows,idx).entries()].sort((a,b)=>b[1].count-a[1].count);
-  if(!list.length)return '<div class="sum-empty">No data for this view.</div>';
-  const body=list.map(([k,o])=>'<tr><td>'+esc(k)+'</td><td class="num">'+nf.format(o.count)+'</td><td class="num">'+pctCell(o)+'</td><td class="num">'+nf.format(o.reach)+'</td><td class="num">'+(o.cost?"₹"+nf.format(o.cost):"–")+'</td></tr>').join("");
-  return '<div class="sum-section" style="padding:0"><div class="tablescroll" style="max-height:58vh"><table class="eff-table"><thead><tr><th>'+esc(label)+'</th><th>Activities</th><th>Completion</th><th>Farmer reach</th><th>Cost</th></tr></thead><tbody>'+body+'</tbody></table></div></div><div class="ov-note">'+nf.format(list.length)+' '+esc(label.toLowerCase())+(list.length===1?"":"s")+' — full list, sorted by activity volume.</div>';
-}
 function fmtMonthLabel(m){const p=String(m).split("-");const names=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const mo=parseInt(p[1],10);return (names[mo-1]||p[1])+" "+p[0];}
-function subMonth(rows){
-  const m=new Map();for(const u of rows){const d=u[UF.date];if(!d||d.length<7)continue;const mo=d.slice(0,7);let o=m.get(mo);if(!o){o={count:0,completed:0,statusable:0,reach:0,cost:0};m.set(mo,o);}o.count++;const st=u[UF.status];if(st==="Completed"||st==="Expired"||st==="Rejected"){o.statusable++;if(st==="Completed")o.completed++;}o.reach+=num(u[UF.reach]);o.cost+=num(u[UF.cost]);}
-  const months=[...m.keys()].sort();if(!months.length)return '<div class="sum-empty">No dated activity in this view.</div>';
-  const max=Math.max(...months.map(k=>m.get(k).count));
-  const bars=months.map(k=>{const o=m.get(k),w=Math.max(4,Math.round(o.count/max*100));return '<div class="hbar"><div class="lbl">'+esc(fmtMonthLabel(k))+'</div><div class="track"><div class="fill" style="width:'+w+'%;background:var(--brand)"></div></div><div class="num">'+nf.format(o.count)+'</div></div>';}).join("");
-  const rowsT=months.map(k=>{const o=m.get(k);return '<tr><td>'+esc(fmtMonthLabel(k))+'</td><td class="num">'+nf.format(o.count)+'</td><td class="num">'+pctCell(o)+'</td><td class="num">'+nf.format(o.reach)+'</td><td class="num">'+(o.cost?"₹"+nf.format(o.cost):"–")+'</td></tr>';}).join("");
-  return '<div class="bd-card"><h3>Activity by month</h3><div class="sdesc">Number of activities each month — the trend over time.</div>'+bars+'</div><div class="sum-section" style="padding:0;margin-top:16px"><div class="tablescroll"><table class="eff-table"><thead><tr><th>Month</th><th>Activities</th><th>Completion</th><th>Farmer reach</th><th>Cost</th></tr></thead><tbody>'+rowsT+'</tbody></table></div></div>';
-}
 function subAttention(rows){
   const m=aggBy(rows,UF.region);
   const counts=[...m.values()].map(o=>o.count).sort((a,b)=>a-b);
@@ -645,13 +646,6 @@ function subAttention(rows){
   const items=flags.slice(0,30).map(f=>'<div class="attn-row"><div class="attn-name">'+esc(f.dist)+'<span class="attn-meta">'+nf.format(f.o.count)+' activities · '+pctCell(f.o)+' completion</span></div><div class="attn-tags">'+f.reasons.map(r=>'<span class="attn-tag sev'+r.sev+'">'+esc(r.t)+'</span>').join("")+'</div></div>').join("");
   const more=flags.length>30?'<div class="ov-note">Showing the 30 most concerning of '+nf.format(flags.length)+' flagged districts.</div>':"";
   return '<div class="sum-section"><h3>Needs attention</h3><div class="sdesc">Districts that stand out — low completion, very little activity, or no marketing/sales data. Respects the current filter above.</div>'+items+more+'</div>';
-}
-function renderOvSub(){
-  const rows=ovSubset(),host=document.getElementById("ovSubBody");if(!host)return;
-  if(ovSub==="product")host.innerHTML=subTable(rows,UF.product,"Product");
-  else if(ovSub==="region")host.innerHTML=subTable(rows,UF.region,"District");
-  else if(ovSub==="month")host.innerHTML=subMonth(rows);
-  else host.innerHTML=subAttention(rows);
 }
 function typeColor(label){return label==="Digital"?"var(--digital)":label==="OOH"?"var(--ooh)":label==="Field"?"var(--field)":"var(--brand)";}
 function bdCard(title,desc,counts,field,limit,colorFn){
@@ -701,8 +695,17 @@ function initMaps(){
 function updateOvMap(){
   if(!ovMap)return;const pts=heatPoints(ovSubset());
   if(ovHeat){ovMap.removeLayer(ovHeat);ovHeat=null;}
-  if(pts.length)ovHeat=L.heatLayer(pts,{radius:12,blur:16,maxZoom:10,minOpacity:.35}).addTo(ovMap);
+  if(pts.length)ovHeat=L.heatLayer(pts,{radius:14,blur:18,maxZoom:11,minOpacity:.4}).addTo(ovMap);
   const c=document.getElementById("ovMapCount");if(c)c.textContent=nf.format(pts.length);
+  // When the filter changes, zoom the map so the update is obvious; whole-country when cleared.
+  const sig=JSON.stringify(ovFilters);
+  if(sig!==window._ovMapSig){
+    window._ovMapSig=sig;
+    if(Object.keys(ovFilters).length&&pts.length){
+      const lats=pts.map(p=>p[0]),lons=pts.map(p=>p[1]);
+      try{ovMap.fitBounds([[Math.min.apply(null,lats),Math.min.apply(null,lons)],[Math.max.apply(null,lats),Math.max.apply(null,lons)]],{maxZoom:9,padding:[24,24]});}catch(e){}
+    }else{ovMap.setView([22.6,80],4);}
+  }
   setTimeout(()=>ovMap.invalidateSize(),30);
 }
 function updateExMap(sel){
@@ -1111,7 +1114,7 @@ function wireModals(){
   document.getElementById("uploadBtn").addEventListener("click",openUpload);
   document.getElementById("uploadClose").addEventListener("click",closeUpload);
   document.getElementById("uploadOverlay").addEventListener("click",e=>{if(e.target.id==="uploadOverlay")closeUpload();});
-  document.getElementById("ovSubtabs").addEventListener("click",e=>{const s=e.target.closest(".subtab");if(!s)return;ovSub=s.getAttribute("data-sub");document.querySelectorAll("#ovSubtabs .subtab").forEach(x=>x.classList.toggle("active",x===s));renderOvSub();});
+  document.getElementById("ovSubtabs").addEventListener("click",e=>{const s=e.target.closest(".subtab");if(!s)return;ovSub=s.getAttribute("data-sub");renderOverview();});
   document.getElementById("recentBtn").addEventListener("click",()=>document.getElementById("recentOverlay").classList.add("open"));
   document.getElementById("recentClose").addEventListener("click",()=>document.getElementById("recentOverlay").classList.remove("open"));
   document.getElementById("recentOverlay").addEventListener("click",e=>{if(e.target.id==="recentOverlay")e.currentTarget.classList.remove("open");});
